@@ -8,9 +8,10 @@ def test_room():
     room_id = response.json()["room_id"]
     assert room_id in room_storage.storage
 
-    with client.websocket_connect(f"/ws/{room_id}") as ws1, client.websocket_connect(
-        f"/ws/{room_id}"
-    ) as ws2:
+    with (
+        client.websocket_connect(f"/ws/{room_id}") as ws1,
+        client.websocket_connect(f"/ws/{room_id}") as ws2,
+    ):
         data = ws1.receive_text()
         assert data == "Connection success!"
 
