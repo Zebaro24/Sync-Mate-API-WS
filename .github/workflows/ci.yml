@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main, master ]
   pull_request:
-    branches: [main, master]
+    branches: [ main, master ]
 
 jobs:
   test:
@@ -36,9 +36,9 @@ jobs:
 
       - name: Run linters
         run: |
-          poetry run flake8 app tests
-          poetry run black --check app tests
-          poetry run isort --check-only app tests
+          poetry run flake8 --max-line-length=120 app tests
+          poetry run black --line-length 120 --check app tests
+          poetry run isort --line-length 120 --check-only app tests
 
       - name: Run tests
         run: poetry run pytest
