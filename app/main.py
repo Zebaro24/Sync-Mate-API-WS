@@ -1,8 +1,8 @@
 from fastapi import FastAPI, WebSocket
-from app.api.endpoints import router as api_router
-from app.ws.websocket import websocket_endpoint
 
+from app.api.endpoints import router as api_router
 from app.config import settings
+from app.ws.websocket import websocket_endpoint
 
 app = FastAPI(
     title=settings.app_name,

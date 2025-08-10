@@ -1,5 +1,6 @@
-from fastapi import WebSocket, WebSocketDisconnect
 import logging
+
+from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger("app.websocket")
 
