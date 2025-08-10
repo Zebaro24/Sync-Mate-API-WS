@@ -1,2 +1,5 @@
 ### GET request to /info
 GET http://localhost:8000/info
+
+### POST request to /room/create
+POST http://localhost:8000/room/create
