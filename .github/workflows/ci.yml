@@ -41,4 +41,6 @@ jobs:
           poetry run isort --line-length 120 --check-only app tests
 
       - name: Run tests
+        env:
+          PYTHONPATH: .
         run: poetry run pytest
