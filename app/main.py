@@ -1,8 +1,8 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
 
 from app.api.endpoints import router as api_router
 from app.config import settings
-from app.ws.websocket import websocket_endpoint
+from app.ws.websocket import router as ws_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -11,9 +11,5 @@ app = FastAPI(
     debug=settings.debug,
 )
 
-app.include_router(api_router)  # подключаем REST API
-
-
-@app.websocket("/ws")  # подключаем WebSocket вручную
-async def websocket_route(websocket: WebSocket):
-    await websocket_endpoint(websocket)
+app.include_router(api_router, prefix="/api")
+app.include_router(ws_router, prefix="/ws")
