@@ -43,4 +43,5 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
+          PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
         run: poetry run pytest
