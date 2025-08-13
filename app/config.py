@@ -14,7 +14,16 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
+    REZKA_URL: str = "https://rezka.ag"
+
+    PROXIES_LIST: list | str | None = None
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if isinstance(self.PROXIES_LIST, str):
+            self.PROXIES_LIST = [p.strip() for p in self.PROXIES_LIST.split(",")]
 
 
 settings = Settings()

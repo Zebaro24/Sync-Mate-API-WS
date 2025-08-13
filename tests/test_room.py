@@ -1,4 +1,4 @@
-from app.services.room_storage import room_storage
+from app.services.room.room_storage import room_storage
 from tests.client import client
 
 
