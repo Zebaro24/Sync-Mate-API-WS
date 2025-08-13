@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     REZKA_URL: str = "https://rezka.ag"
 
-    PROXIES_LIST: list | str
+    PROXIES_LIST: list | str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

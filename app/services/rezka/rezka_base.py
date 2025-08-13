@@ -11,6 +11,8 @@ class RezkaBase:
     PROXIES_LIST = settings.PROXIES_LIST
 
     def _get_random_proxy(self):
+        if not self.PROXIES_LIST:
+            return None
         return choice(self.PROXIES_LIST)
 
     @staticmethod
