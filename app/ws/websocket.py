@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services.client_handler import ClientHandler
-from app.services.room_storage import room_storage
+from app.services.room.room_storage import room_storage
 
 router = APIRouter()
 

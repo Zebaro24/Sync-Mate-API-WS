@@ -1,4 +1,4 @@
-from app.core.room import Room
+from app.services.room.room import Room
 
 
 class RoomStorage:
