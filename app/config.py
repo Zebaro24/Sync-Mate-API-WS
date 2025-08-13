@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
+    REZKA_URL: str = "https://rezka.ag"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
