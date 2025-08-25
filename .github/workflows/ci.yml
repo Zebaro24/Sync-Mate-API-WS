@@ -7,9 +7,10 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
-
+    outputs:
+      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v3
 
@@ -19,6 +20,7 @@ jobs:
           python-version: '3.13'
 
       - name: Cache Poetry dependencies
+        id: cache-deps
         uses: actions/cache@v3
         with:
           path: |
@@ -28,11 +30,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.0'
 
       - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-ansi
+
+  lint:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.0'
 
       - name: Run linters
         run: |
@@ -40,8 +61,24 @@ jobs:
           poetry run black --line-length 120 --check app tests
           poetry run isort --line-length 120 --check-only app tests
 
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+      PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.0'
+
       - name: Run tests
-        env:
-          PYTHONPATH: .
-          PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
         run: poetry run pytest
