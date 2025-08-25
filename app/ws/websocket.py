@@ -2,8 +2,9 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.services.client_handler import ClientHandler
 from app.services.room.room_storage import room_storage
+from app.services.room.user import User
+from app.services.room.user_handler import UserHandler
 
 router = APIRouter()
 
@@ -12,24 +13,30 @@ logger = logging.getLogger("app.websocket")
 
 @router.websocket("/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
+    await websocket.accept()
     room = room_storage.get_room(room_id)
     if room is None:
-        await websocket.close(code=1008)  # policy violation
+        await websocket.close(code=4000, reason="Room not found")
         return
 
-    room.add_client(websocket)
-    client_handler = ClientHandler(room, websocket)
+    connection_msg = await websocket.receive_json()
+    if connection_msg.get("type") != "connect" or not connection_msg.get("name"):
+        await websocket.close(code=4001, reason="Authentication is required")
+        return
 
-    await websocket.accept()
-    await websocket.send_text("Connection success!")
+    user = User(connection_msg.get("name"), websocket)
+    room.add_user(user)
+    user_handler = UserHandler(user, room)
+    await websocket.send_json({"type": "connect", "message": "success"})
+
     try:
         while True:
             data = await websocket.receive_json()
-            await client_handler.handle(data)
+            await user_handler.handle(data)
     except WebSocketDisconnect:
-        logger.info("The client disconnected")
+        logger.info("The user disconnected")
     except Exception as e:
         logger.error(f"Error in WebSocket: {e}")
         await websocket.close(code=1011)  # Internal Error
     finally:
-        room.remove_client(websocket)
+        room.remove_user(user)

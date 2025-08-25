@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
+    REQUIRED_DOWNLOAD_TIME: int = 15
+
     REZKA_URL: str = "https://rezka.ag"
 
     PROXIES_LIST: list | str | None = None

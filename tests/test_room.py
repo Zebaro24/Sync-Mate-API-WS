@@ -12,12 +12,10 @@ def test_room():
         client.websocket_connect(f"/ws/{room_id}") as ws1,
         client.websocket_connect(f"/ws/{room_id}") as ws2,
     ):
-        data = ws1.receive_text()
-        assert data == "Connection success!"
+        ws1.send_json({"type": "connect", "name": "test"})
+        data = ws1.receive_json()
+        assert data["type"] == "connect" and data["message"] == "success"
 
-        data = ws2.receive_text()
-        assert data == "Connection success!"
-
-        ws1.send_json({"type": "play", "video_time": "1:25"})
+        ws2.send_json({"type": "connect", "name": "test2"})
         data = ws2.receive_json()
-        assert data["video_time"] == "1:25"
+        assert data["type"] == "connect" and data["message"] == "success"
