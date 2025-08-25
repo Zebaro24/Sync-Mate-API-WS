@@ -2,8 +2,8 @@ import asyncio
 from typing import List
 from uuid import uuid4
 
-from app.services.room.user import User
 from app.config import settings
+from app.services.room.user import User
 
 
 class Room:
@@ -54,34 +54,23 @@ class Room:
 
     async def play(self):
         print(f"Room {self.id} is playing")
-        await asyncio.gather(*[
-            user.websocket.send_json({"type": "play"})
-            for user in self.user_storage
-        ])
+        await asyncio.gather(*[user.websocket.send_json({"type": "play"}) for user in self.user_storage])
 
     async def pause(self, exception_user=None):
         users = self.get_users_exc(exception_user)
-        await asyncio.gather(*[
-            user.websocket.send_json({"type": "pause"})
-            for user in users
-        ])
+        await asyncio.gather(*[user.websocket.send_json({"type": "pause"}) for user in users])
 
     async def seek(self, current_time, exception_user=None, user=None):
         if user:
             await user.websocket.send_json({"type": "seek", "current_time": current_time})
             return
         users = self.get_users_exc(exception_user)
-        await asyncio.gather(*[
-            user.websocket.send_json({"type": "seek", "current_time": current_time})
-            for user in users
-        ])
+        await asyncio.gather(
+            *[user.websocket.send_json({"type": "seek", "current_time": current_time}) for user in users]
+        )
 
     async def remove_block_pause(self):
-        await asyncio.gather(*[
-            user.websocket.send_json({"type": "remove_block_pause"})
-            for user in self.user_storage
-        ])
-
+        await asyncio.gather(*[user.websocket.send_json({"type": "remove_block_pause"}) for user in self.user_storage])
 
     def __str__(self):
         return f"<Room {self.id}: users={[user.websocket.client for user in self.user_storage]}>"

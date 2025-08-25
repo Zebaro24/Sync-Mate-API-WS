@@ -1,7 +1,7 @@
 import asyncio
 
-from app.services.room.user import User
 from app.services.room.room import Room
+from app.services.room.user import User
 
 
 class UserHandler:

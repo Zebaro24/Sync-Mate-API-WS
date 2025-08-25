@@ -2,9 +2,9 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.services.room.room_storage import room_storage
 from app.services.room.user import User
 from app.services.room.user_handler import UserHandler
-from app.services.room.room_storage import room_storage
 
 router = APIRouter()
 
