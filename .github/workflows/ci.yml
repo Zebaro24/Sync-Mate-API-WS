@@ -49,6 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+    env:
+      PYTHONPATH: .
+      PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
     steps:
       - uses: actions/checkout@v3
 
