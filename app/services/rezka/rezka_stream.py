@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 
+from app.schemas.rezka import MovieResponse, SeriesResponse
 from app.services.rezka.rezka_base import RezkaBase
 from app.services.rezka.rezka_decoder import StreamDecoder
-from app.services.rezka.rezka_schemas import MovieResponse, SeriesResponse
 
 
 class RezkaStream(RezkaBase):

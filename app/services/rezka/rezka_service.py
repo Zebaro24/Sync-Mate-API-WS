@@ -1,13 +1,8 @@
 import re
 from typing import List
 
+from app.schemas.rezka import InfoMovieResponse, MovieQuickSearchResponse, MovieSearchResponse, QuickInfoMovieResponse
 from app.services.rezka.rezka_base import RezkaBase
-from app.services.rezka.rezka_schemas import (
-    InfoMovieResponse,
-    MovieQuickSearchResponse,
-    MovieSearchResponse,
-    QuickInfoMovieResponse,
-)
 
 
 class RezkaService(RezkaBase):

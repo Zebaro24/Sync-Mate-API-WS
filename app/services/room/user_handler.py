@@ -33,6 +33,7 @@ class UserHandler:
                         await self.room.play()
 
             data["type"] = "info"
+            data["name"] = self.user.name
             del data["current_time"]
             await self.send_to_room(data)
             return

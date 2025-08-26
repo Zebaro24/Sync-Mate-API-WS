@@ -7,7 +7,7 @@ from app.config import settings
 router = APIRouter()
 
 
-router.include_router(room_router, prefix="/room")
+router.include_router(room_router, prefix="/rooms")
 router.include_router(rezka_router, prefix="/rezka")
 
 

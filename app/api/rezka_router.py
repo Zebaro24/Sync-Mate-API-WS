@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.services.rezka.rezka_schemas import (
+from app.schemas.rezka import (
     InfoMovieResponse,
     MovieQuickSearchResponse,
     MovieResponse,
