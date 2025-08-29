@@ -84,6 +84,6 @@ jobs:
             # Run new container with restart
             docker run -d \
               --name $REPO_NAME \
-              -p ${{ vars.DOCKER_PORT }}:8000 \
+              -p ${{ vars.SERVER_PORT }}:8000 \
               --restart unless-stopped \
               ghcr.io/$OWNER_NAME/$REPO_NAME:latest
