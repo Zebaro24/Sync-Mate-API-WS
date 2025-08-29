@@ -8,8 +8,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      repo_name: ${{ steps.set-repo-name.outputs.REPO_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -29,9 +27,9 @@ jobs:
         id: set-repo-name
         run: |
           REPO_NAME=$(basename "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "REPO_NAME=$REPO_NAME"
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
-          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
+          echo "OWNER_NAME=$OWNER_NAME" >> $GITHUB_ENV
 
       # Log in to GitHub Container Registry
       - name: Log in to GHCR
@@ -45,12 +43,12 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker build -f docker/Dockerfile \
-            -t ghcr.io/${{ github.repository_owner }}/$REPO_NAME:${VERSION} .
-          docker push ghcr.io/${{ github.repository_owner }}/$REPO_NAME:${VERSION}
+            -t ghcr.io/$OWNER_NAME/$REPO_NAME:${VERSION} .
+          docker push ghcr.io/$OWNER_NAME/$REPO_NAME:${VERSION}
 
-          docker tag ghcr.io/${{ github.repository_owner }}/$REPO_NAME:${VERSION} \
-                     ghcr.io/${{ github.repository_owner }}/$REPO_NAME:latest
-          docker push ghcr.io/${{ github.repository_owner }}/$REPO_NAME:latest
+          docker tag ghcr.io/$OWNER_NAME/$REPO_NAME:${VERSION} \
+                     ghcr.io/$OWNER_NAME/$REPO_NAME:latest
+          docker push ghcr.io/$OWNER_NAME/$REPO_NAME:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,22 +64,23 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            REPO_NAME=${{ needs.build-and-push.outputs.repo_name }}
+            REPO_NAME=$(basename "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
 
             # Stop and remove old container
             docker stop $REPO_NAME || true
             docker rm $REPO_NAME || true
 
             # Remove old latest image if exists
-            docker rmi ghcr.io/${{ github.repository_owner }}/$REPO_NAME:latest || true
+            docker rmi ghcr.io/$OWNER_NAME/$REPO_NAME:latest || true
 
             # Pull new latest image
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker pull ghcr.io/${{ github.repository_owner }}/$REPO_NAME:latest
+            docker pull ghcr.io/$OWNER_NAME/$REPO_NAME:latest
 
             # Run new container with restart
             docker run -d \
               --name $REPO_NAME \
               -p ${{ vars.DOCKER_PORT }}:8000 \
               --restart unless-stopped \
-              ghcr.io/${{ github.repository_owner }}/$REPO_NAME:latest
+              ghcr.io/$OWNER_NAME/$REPO_NAME:latest
