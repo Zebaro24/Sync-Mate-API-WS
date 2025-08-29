@@ -1,0 +1,8 @@
+services:
+  sync-mate-api-ws:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: sync-mate-api-ws
+    ports:
+      - "8000:8000"
