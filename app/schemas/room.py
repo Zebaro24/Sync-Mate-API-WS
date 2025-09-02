@@ -10,14 +10,14 @@ from app.services.room.room import Room
 class RoomUpdate(BaseModel):
     name: Optional[str] = None
     video_url: Optional[str] = None
-    current_time: Optional[int] = None
+    current_time: Optional[float] = None
 
 
 class RoomRequest(BaseModel):
     name: str
 
     video_url: str
-    current_time: Optional[int] = 0
+    current_time: Optional[float] = 0
 
 
 class RoomSchema(RoomRequest):
@@ -33,7 +33,7 @@ class RoomResponse(RoomSchema):
     @computed_field
     @property
     def link(self) -> str:
-        return f"/api/room/{self.room_id}/redirect"
+        return f"/rooms/{self.room_id}/redirect"
 
     @classmethod
     def from_room(cls, room: Room):
