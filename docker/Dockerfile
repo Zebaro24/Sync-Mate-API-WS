@@ -4,8 +4,8 @@ WORKDIR /app
 ARG DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y curl build-essential \
-    && curl -sSL https://install.python-poetry.org | python3 - \
+RUN pip install --upgrade pip \
+    && pip install poetry \
     && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
 COPY pyproject.toml poetry.lock* /app/

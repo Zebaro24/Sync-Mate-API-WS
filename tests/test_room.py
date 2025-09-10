@@ -35,11 +35,11 @@ def test_websocket_connections():
     ):
         ws1.send_json({"type": "connect", "name": "test"})
         data = ws1.receive_json()
-        assert data["type"] == "connect" and data["message"] == "success"
+        assert data["type"] == "connect" and data["id"]
 
         ws2.send_json({"type": "connect", "name": "test2"})
         data = ws2.receive_json()
-        assert data["type"] == "connect" and data["message"] == "success"
+        assert data["type"] == "connect" and data["id"]
 
         response = client.get(f"/api/rooms/{room_id}")
         assert response.status_code == 200

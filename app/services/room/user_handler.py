@@ -5,7 +5,7 @@ from app.services.room.user import User
 
 
 class UserHandler:
-    ACTION_TYPES = ["play", "pause", "status", "load", "set_video"]
+    ACTION_TYPES = ["play", "pause", "status", "load", "set_video", "info"]
 
     def __init__(self, user: User, room: Room):
         self.user = user
@@ -19,6 +19,11 @@ class UserHandler:
         if data.get("type") not in self.ACTION_TYPES:
             return
         print(f"User {self.user.name} sent {data}")
+
+        if data.get("type") == "info":
+            del data["type"]
+            self.user.info = data
+            return
 
         self.user.current_time = data.get("current_time")
         self.user.downloaded_time = data.get("downloaded_time")
