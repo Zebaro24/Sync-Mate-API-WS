@@ -27,7 +27,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     user = User(connection_msg.get("name"), websocket)
     room.add_user(user)
     user_handler = UserHandler(user, room)
-    await websocket.send_json({"type": "connect", "message": "success"})
+    await websocket.send_json({"type": "connect", "id": user.user_id})
 
     try:
         while True:

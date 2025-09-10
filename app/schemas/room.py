@@ -45,10 +45,14 @@ class RoomResponse(RoomSchema):
             current_time=room.current_time,
             created_at=room.created_at,
             status=status,
-            users=[{
-                "name": u.name,
-                "current_time": u.current_time,
-                "downloaded_time": u.downloaded_time,
-                "info": u.info,
-            } for u in room.user_storage],
+            users=[
+                {
+                    "user_id": u.user_id,
+                    "name": u.name,
+                    "current_time": u.current_time,
+                    "downloaded_time": u.downloaded_time,
+                    "info": u.info,
+                }
+                for u in room.user_storage
+            ],
         )
