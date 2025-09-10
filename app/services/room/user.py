@@ -10,5 +10,4 @@ class User:
         self.current_time = 0
         self.downloaded_time = 0
 
-        self.video_url: str = ""
-        self.playback_time: int = 0
+        self.info = {}
