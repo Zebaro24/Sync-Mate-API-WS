@@ -1,8 +1,8 @@
 # Sync-Mate-API-WS 🌐
 
 [![Project Status](https://img.shields.io/badge/Status-Development-yellow)]()
-[![Python](https://img.shields.io/badge/Python-3.11-%233776AB?logo=python)](https://python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.2-%2300B4D8?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.13-%233776AB?logo=python)](https://python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.116.1-%2300B4D8?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-1C1C1C?logo=websocket)]()
 [![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/licenses/MIT)
 
