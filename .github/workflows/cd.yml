@@ -45,7 +45,7 @@ jobs:
       # Build and push Docker image
       - name: Build and push Docker image
         run: |
-          docker build -f docker/Dockerfile \
+          docker build -f Dockerfile \
             -t ghcr.io/$OWNER_NAME/$REPO_NAME:${VERSION} .
           docker push ghcr.io/$OWNER_NAME/$REPO_NAME:${VERSION}
 
