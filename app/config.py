@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     author: str = "Zebaro (zebaro.dev)"
     version: str = "0.1.1"
 
-    debug: bool = True
+    debug: bool = False
 
     REQUIRED_DOWNLOAD_TIME: int = 15
 
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     PROXIES_LIST: list | str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

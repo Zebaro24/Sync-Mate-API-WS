@@ -1,0 +1,8 @@
+services:
+  sync-mate-api-ws:
+    build: .
+    image: ghcr.io/zebaro24/sync-mate-api-ws:latest
+    container_name: sync-mate-api-ws
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT}:8000"

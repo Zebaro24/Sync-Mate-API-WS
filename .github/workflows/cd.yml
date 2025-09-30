@@ -60,30 +60,31 @@ jobs:
       name: prod
       url: https://sync-mate-api-ws.zebaro.dev
     steps:
-      - name: Deploy to server
+      - name: Checkout only docker-compose.yml
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: docker-compose.yml
+          fetch-depth: 1
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: |
+            docker-compose.yml
+          target: /srv/sync-mate/
+      - name: Deploy containers via docker-compose
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            REPO_NAME=$(basename "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-
-            # Stop and remove old container
-            docker stop $REPO_NAME || true
-            docker rm $REPO_NAME || true
-
-            # Remove old latest image if exists
-            docker rmi ghcr.io/$OWNER_NAME/$REPO_NAME:latest || true
-
-            # Pull new latest image
+            cd /srv/sync-mate
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker pull ghcr.io/$OWNER_NAME/$REPO_NAME:latest
-
-            # Run new container with restart
-            docker run -d \
-              --name $REPO_NAME \
-              -p ${{ vars.SERVER_PORT }}:8000 \
-              --restart unless-stopped \
-              ghcr.io/$OWNER_NAME/$REPO_NAME:latest
+            
+            export SERVER_PORT=${{ vars.SERVER_PORT }}
+            
+            docker compose -p sync-mate up -d --pull always
+            docker image prune -f
