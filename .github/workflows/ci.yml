@@ -7,12 +7,82 @@ on:
     branches: [ main, master ]
 
 jobs:
-  lint:
+  lint-format:
+    name: Lint & Format
     runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Cache Poetry dependencies
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.0'
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Check formatting
+        run: |
+          poetry run black --check app tests
+          poetry run isort --check-only app tests
+
+      - name: Run linting
+        run: poetry run flake8 app tests
+
+  type-check:
+    name: Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Cache Poetry dependencies
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.0'
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run MyPy
+        run: poetry run mypy app
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -36,29 +106,31 @@ jobs:
           poetry-version: '1.8.0'
 
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-interaction
 
-      - name: Run linters
-        run: |
-          poetry run flake8 --max-line-length=120 app tests
-          poetry run black --line-length 120 --check app tests
-          poetry run isort --line-length 120 --check-only app tests
+      - name: Run Bandit
+        run: poetry run bandit -r app
+
+      - name: Run Safety
+        run:
+          poetry run safety check
 
   test:
+    name: Tests & Coverage
     runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+    strategy:
+      matrix:
+        python-version: [ '3.11', '3.12', '3.13' ]
     env:
       PYTHONPATH: .
       PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
       - name: Cache Poetry dependencies
         id: cache-deps
@@ -77,8 +149,13 @@ jobs:
           poetry-version: '1.8.0'
 
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-interaction
 
-      - name: Run tests
-        run: poetry run pytest
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: true
