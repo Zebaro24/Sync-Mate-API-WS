@@ -13,7 +13,7 @@ class RezkaBase:
     def _get_random_proxy(self):
         if not self.PROXIES_LIST:
             return None
-        return choice(self.PROXIES_LIST)
+        return choice(self.PROXIES_LIST)  # nosec B311
 
     @staticmethod
     def _parse_response(response, is_json) -> dict | BeautifulSoup:
