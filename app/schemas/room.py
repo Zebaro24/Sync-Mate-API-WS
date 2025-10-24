@@ -30,8 +30,8 @@ class RoomResponse(RoomSchema):
     status: str = "waiting"
     users: list[dict] = []
 
-    @computed_field
     @property
+    @computed_field
     def link(self) -> str:
         return f"/rooms/{self.room_id}/redirect"
 

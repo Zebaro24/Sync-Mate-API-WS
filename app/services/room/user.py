@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import WebSocket
 
 
@@ -11,4 +13,4 @@ class User:
         self.current_time = 0
         self.downloaded_time = 0
 
-        self.info = {}
+        self.info: dict[str, Any] = {}

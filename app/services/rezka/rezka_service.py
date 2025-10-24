@@ -13,10 +13,12 @@ class RezkaService(RezkaBase):
         for item in soup.select("li a"):
             title_elem = item.select_one("span.enty")
 
-            movie_id = int(re.search(r"/(\d+)-", item["href"]).group(1))
-            title = self.get_text(title_elem)
-            alter_title = self.get_text(title_elem.next_sibling)
-            url = item["href"]
+            if (match := re.search(r"/(\d+)-", str(item["href"]))) is None:
+                raise ValueError(f"Cannot extract movie ID from URL: {item["href"]}")
+            movie_id = int(match.group(1))
+            title = self.get_text(title_elem) or ""
+            alter_title = self.get_text(title_elem.next_sibling if title_elem else None) or ""
+            url = str(item["href"])
             rating = self.get_text(item.select_one("i.hd-tooltip"))
 
             search_res.append(
@@ -37,13 +39,13 @@ class RezkaService(RezkaBase):
             data={"id": movie_id, "is_touch": 1},
         )
 
-        category = self.get_text(soup.select_one("div.b-content__catlabel"))
-        title = self.get_text(soup.select_one("div.b-content__bubble_title"))
+        category = self.get_text(soup.select_one("div.b-content__catlabel")) or ""
+        title = self.get_text(soup.select_one("div.b-content__bubble_title")) or ""
         rating = self.get_text(soup.select_one("div.b-content__bubble_rating"))
-        description = self.get_text(soup.select_one("div.b-content__bubble_text"))
+        description = self.get_text(soup.select_one("div.b-content__bubble_text")) or ""
 
         genre_elem = soup.select(".b-content__bubble_text")[-1]
-        genres = [self.get_text(genre) for genre in genre_elem.select("a")]
+        genres = [self.get_text(genre) or "" for genre in genre_elem.select("a")]
 
         return QuickInfoMovieResponse(
             id=movie_id,
@@ -65,12 +67,13 @@ class RezkaService(RezkaBase):
         for movie_elem in movie_elems:
             inline_elem = movie_elem.select_one("div.b-content__inline_item-link")
 
-            movie_id = int(movie_elem["data-id"])
-            title = self.get_text(inline_elem.select_one("a"))
-            category = self.get_text(movie_elem.select_one("span.cat"))
-            caption = self.get_text(inline_elem.select_one("div"))
-            image = movie_elem.select_one("img")["src"]
-            url = movie_elem["data-url"]
+            movie_id = int(str(movie_elem["data-id"]))
+            title = self.get_text(inline_elem.select_one("a") if inline_elem else None) or ""
+            category = self.get_text(movie_elem.select_one("span.cat")) or ""
+            caption = self.get_text(inline_elem.select_one("div") if inline_elem else None) or ""
+            img_tag = movie_elem.select_one("img")
+            image = str(img_tag["src"]) if img_tag and img_tag.get("src") else ""
+            url = str(movie_elem.get("data-url", ""))
 
             search_res.append(
                 MovieSearchResponse(
@@ -101,29 +104,40 @@ class RezkaService(RezkaBase):
             movie_id = int(movie_id)
             translate_id = int(translate_id)
         else:
-            movie_id = int(re.search(r"/(\d+)-", movie_url).group(1))
+            match = re.search(r"/(\d+)-", movie_url)
+            if match is None:
+                raise ValueError(f"Cannot extract movie_id from URL: {movie_url}")
+            movie_id = int(match.group(1))
             content_type, translate_id = None, None
 
-        title = self.get_text(soup.select_one("div.b-post__title"))
-        alter_title = self.get_text(soup.select_one("div.b-post__origtitle"))
-        category = self.get_text(soup.select_one("a.b-topnav__item-link.active_section"))
-        description = self.get_text(soup.select_one("div.b-post__description_text"))
+        title = self.get_text(soup.select_one("div.b-post__title")) or ""
+        alter_title = self.get_text(soup.select_one("div.b-post__origtitle")) or ""
+        category = self.get_text(soup.select_one("a.b-topnav__item-link.active_section")) or ""
+        description = self.get_text(soup.select_one("div.b-post__description_text")) or ""
 
         rating = {}
         for site in ("imdb", "kp"):
             elem = soup.select_one(f"span.b-post__info_rates.{site}")
             if elem:
-                rating[site] = self.get_text(elem.select_one("span"))
+                text = self.get_text(elem.select_one("span"))
+                if text is not None:
+                    rating[site] = text
 
         genre_elems = soup.select('span[itemprop="genre"]')
         genres = []
         for genre in genre_elems:
-            genres.append(self.get_text(genre))
+            text = self.get_text(genre)
+            if text is not None:
+                genres.append(text)
 
         translator_elems = soup.select("li.b-translator__item, a.b-translator__item")
         translators = {}
         for translator_elem in translator_elems:
-            translators[int(translator_elem["data-translator_id"])] = self.get_text(translator_elem)
+            translator_id_str = translator_elem.get("data-translator_id")
+            if translator_id_str is None:
+                continue
+            translator_id = int(str(translator_id_str))
+            translators[translator_id] = self.get_text(translator_elem)
         if not translators and translate_id:
             translators[translate_id] = None
 

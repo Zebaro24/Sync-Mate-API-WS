@@ -32,6 +32,7 @@ def test_parse_response_html(mocker):
 
     result = base._parse_response(response, is_json=False)
     assert isinstance(result, BeautifulSoup)
+    assert result.p is not None
     assert result.p.text == "Hello"
 
 
@@ -40,13 +41,15 @@ def test_get_calls_httpx_get(mocker):
     mock_get.return_value = mocker.MagicMock(text="<html></html>")
 
     base = RezkaBase()
-    mock_parse = mocker.patch.object(base, "_parse_response", return_value="parsed")
+    mock_parse = mocker.patch.object(
+        base, "_parse_response", return_value=BeautifulSoup("<html></html>", "html.parser")
+    )
 
     result = base.get("/page", params={"q": 1})
 
     mock_get.assert_called_once()
     mock_parse.assert_called_once()
-    assert result == "parsed"
+    assert result == BeautifulSoup("<html></html>", "html.parser")
 
 
 def test_post_calls_httpx_post(mocker):
@@ -54,13 +57,15 @@ def test_post_calls_httpx_post(mocker):
     mock_post.return_value = mocker.MagicMock(text="<html></html>")
 
     base = RezkaBase()
-    mock_parse = mocker.patch.object(base, "_parse_response", return_value="parsed")
+    mock_parse = mocker.patch.object(
+        base, "_parse_response", return_value=BeautifulSoup("<html></html>", "html.parser")
+    )
 
     result = base.post("/submit", data={"a": 1})
 
     mock_post.assert_called_once()
     mock_parse.assert_called_once()
-    assert result == "parsed"
+    assert result == BeautifulSoup("<html></html>", "html.parser")
 
 
 def test_get_text_returns_none_if_tag_none():

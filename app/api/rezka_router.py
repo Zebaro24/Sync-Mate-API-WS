@@ -42,5 +42,5 @@ async def movie_source(movie_id: int, translator_id: int):
 
 
 @router.get("/series_source", tags=["Rezka", "Stream"], response_model=SeriesResponse)
-async def series_source(series_id: int, translator_id: int, season: int = None, episode: int = None):
+async def series_source(series_id: int, translator_id: int, season: int | None = None, episode: int | None = None):
     return rezka_stream.get_series_source(series_id, translator_id, season, episode)

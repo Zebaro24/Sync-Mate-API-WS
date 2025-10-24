@@ -1,6 +1,7 @@
 from random import choice
+from typing import Literal, Union, overload
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, PageElement, Tag
 from httpx import URL, get, post
 
 from app.config import settings
@@ -16,23 +17,36 @@ class RezkaBase:
         return choice(self.PROXIES_LIST)  # nosec B311
 
     @staticmethod
-    def _parse_response(response, is_json) -> dict | BeautifulSoup:
+    def _parse_response(response, is_json) -> Union[dict, BeautifulSoup]:
         if is_json:
-            return response.json()
+            res: dict = response.json()
+            return res
 
         soup = BeautifulSoup(response.text, "html.parser")
         return soup
 
-    def get(self, url: str, params=None, is_json=False) -> dict | BeautifulSoup:
+    @overload
+    def get(self, url: str, params=None, is_json: Literal[False] = ...) -> BeautifulSoup: ...
+
+    @overload
+    def get(self, url: str, params=None, is_json: Literal[True] = ...) -> dict: ...
+
+    def get(self, url: str, params=None, is_json=False):
         response = get(self.URL.join(url), params=params, proxy=self._get_random_proxy())
         return self._parse_response(response, is_json)
 
-    def post(self, url, data=None, is_json=False) -> dict | BeautifulSoup:
+    @overload
+    def post(self, url: str, data=None, is_json: Literal[False] = ...) -> BeautifulSoup: ...
+
+    @overload
+    def post(self, url: str, data=None, is_json: Literal[True] = ...) -> dict: ...
+
+    def post(self, url, data=None, is_json=False):
         response = post(self.URL.join(url), data=data, proxy=self._get_random_proxy())
         return self._parse_response(response, is_json)
 
     @staticmethod
-    def get_text(tag: None | Tag) -> None | str:
+    def get_text(tag: Tag | PageElement | None) -> None | str:
         if tag is None:
             return None
-        return tag.text.strip()
+        return str(tag.text).strip()

@@ -25,8 +25,8 @@ class UserHandler:
             self.user.info = data
             return
 
-        self.user.current_time = data.get("current_time")
-        self.user.downloaded_time = data.get("downloaded_time")
+        self.user.current_time = int(data.get("current_time") or 0)
+        self.user.downloaded_time = int(data.get("downloaded_time") or 0)
 
         if data.get("type") == "status":
             if not self.room.is_loaded:

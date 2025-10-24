@@ -30,7 +30,7 @@ class Room:
         self.video_url = video_url
         self.current_time = current_time
 
-    def get_users_exc(self, exception_user: User = None):
+    def get_users_exc(self, exception_user: User | None = None):
         return [user for user in self.user_storage if user != exception_user]
 
     def load(self, current_time):

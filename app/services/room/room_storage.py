@@ -11,7 +11,7 @@ class RoomStorage:
         self.storage[room.room_id] = room
         return room
 
-    def get_room(self, id_room) -> Room:
+    def get_room(self, id_room) -> Room | None:
         return self.storage.get(id_room, None)
 
     def delete_room(self, id_room) -> bool:
