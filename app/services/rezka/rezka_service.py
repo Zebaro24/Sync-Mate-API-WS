@@ -14,7 +14,7 @@ class RezkaService(RezkaBase):
             title_elem = item.select_one("span.enty")
 
             if (match := re.search(r"/(\d+)-", str(item["href"]))) is None:
-                raise ValueError(f"Cannot extract movie ID from URL: {item["href"]}")
+                raise ValueError(f"Cannot extract movie ID from URL: {item['href']}")
             movie_id = int(match.group(1))
             title = self.get_text(title_elem) or ""
             alter_title = self.get_text(title_elem.next_sibling if title_elem else None) or ""
