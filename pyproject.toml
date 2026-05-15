@@ -8,33 +8,33 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.116.1"
-uvicorn = {extras = ["standard"], version = "^0.35.0"}
-pydantic-settings = "^2.10.1"
+fastapi = "^0.136.1"
+uvicorn = {extras = ["standard"], version = "^0.47.0"}
+pydantic-settings = "^2.14.1"
 poetry-core = "^2.1.3"
-beautifulsoup4 = "^4.13.4"
+beautifulsoup4 = "^4.14.3"
 httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 # Linting and formatting
-black = "^25.9"
-isort = "^7.0"
+black = "^26.3"
+isort = "^8.0"
 flake8 = "^7.3"
-flake8-bugbear = "^24.12"
-flake8-pyproject = "^1.2.3"
+flake8-bugbear = "^25.11"
+flake8-pyproject = "^1.2.4"
 
 # Type checking
-mypy = "^1.18"
+mypy = "^2.1"
 
 # Testing
-pytest = "^8.4"
+pytest = "^9.0"
 pytest-mock = "^3.15.1"
-pytest-cov = "^7.0"
-pytest-asyncio = "^1.2.0"
+pytest-cov = "^7.1"
+pytest-asyncio = "^1.3"
 
 # Security
-bandit = "^1.8"
-safety = "^3.6"
+bandit = "^1.9"
+safety = "^3.7"
 
 # ----------------------------
 # Black configuration
@@ -79,7 +79,8 @@ exclude = [
     "*.egg-info"
 ]
 per-file-ignores = [
-    "__init__.py:F401"
+    "__init__.py:F401",
+    "*/router.py:B008",
 ]
 
 # ----------------------------

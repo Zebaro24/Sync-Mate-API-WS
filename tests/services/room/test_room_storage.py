@@ -2,8 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.services.room.room import Room
-from app.services.room.room_storage import RoomStorage
+from app.modules.room.models import Room
+from app.modules.room.service import RoomService
 
 
 @pytest.fixture
@@ -21,14 +21,14 @@ def room_schema():
 
 @pytest.fixture
 def storage():
-    return RoomStorage()
+    return RoomService()
 
 
 def test_create_room(storage, room_schema):
     room = storage.create_room(room_schema)
     assert isinstance(room, Room)
-    assert "123" in storage.storage
-    assert storage.storage["123"] == room
+    assert "123" in storage.rooms
+    assert storage.rooms["123"] == room
     assert room.name == "TestRoom"
 
 
@@ -47,7 +47,7 @@ def test_delete_room_when_empty(storage, room_schema):
     room.user_storage = []
     result = storage.delete_room("123")
     assert result is True
-    assert "123" not in storage.storage
+    assert "123" not in storage.rooms
 
 
 def test_delete_room_when_has_users(storage, room_schema):
@@ -56,4 +56,4 @@ def test_delete_room_when_has_users(storage, room_schema):
     room.user_storage = [fake_user]
     result = storage.delete_room("123")
     assert result is False
-    assert "123" in storage.storage
+    assert "123" in storage.rooms

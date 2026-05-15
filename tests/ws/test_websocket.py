@@ -1,12 +1,11 @@
 import asyncio
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import ANY
+from unittest.mock import ANY, MagicMock
 
 import pytest
 
-from app.services.room.room_storage import room_storage
-from app.ws.websocket import websocket_endpoint
+from app.ws.router import websocket_endpoint
 
 
 @pytest.mark.asyncio
@@ -23,20 +22,22 @@ async def test_websocket_successful_connection(mocker):
     )
 
     mock_room = SimpleNamespace(
-        add_user=mocker.Mock(),
-        remove_user=mocker.Mock(),
+        add_user=mocker.AsyncMock(),
+        remove_user=mocker.AsyncMock(),
     )
-    mocker.patch.object(room_storage, "get_room", return_value=mock_room)
 
-    mocker.patch("app.ws.websocket.UserHandler.handle", new=mocker.AsyncMock())
+    mock_service = MagicMock()
+    mock_service.get_room.return_value = mock_room
+
+    mocker.patch("app.ws.router.UserHandler.handle", new=mocker.AsyncMock())
 
     with pytest.raises(asyncio.CancelledError):
-        await websocket_endpoint(mock_ws, "room123")
+        await websocket_endpoint(mock_ws, "room123", room_service=mock_service)
 
     mock_ws.accept.assert_awaited_once()
-    mock_room.add_user.assert_called_once()
+    mock_room.add_user.assert_awaited_once()
     mock_ws.send_json.assert_awaited_with({"type": "connect", "id": ANY})
-    mock_room.remove_user.assert_called_once()
+    mock_room.remove_user.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -49,9 +50,10 @@ async def test_room_not_found(mocker):
         send_json=mocker.AsyncMock(),
     )
 
-    mocker.patch.object(room_storage, "get_room", return_value=None)
+    mock_service = MagicMock()
+    mock_service.get_room.return_value = None
 
-    await websocket_endpoint(mock_ws, "nonexistent_room")
+    await websocket_endpoint(mock_ws, "nonexistent_room", room_service=mock_service)
 
     mock_ws.accept.assert_awaited_once()
     mock_ws.close.assert_awaited_once_with(code=4000, reason="Room not found")
@@ -67,11 +69,10 @@ async def test_invalid_connection_message(mocker):
         send_json=mocker.AsyncMock(),
     )
 
-    mocker.patch.object(
-        room_storage, "get_room", return_value=SimpleNamespace(add_user=mocker.Mock(), remove_user=mocker.Mock())
-    )
+    mock_service = MagicMock()
+    mock_service.get_room.return_value = SimpleNamespace(add_user=mocker.AsyncMock(), remove_user=mocker.AsyncMock())
 
-    await websocket_endpoint(mock_ws, "room123")
+    await websocket_endpoint(mock_ws, "room123", room_service=mock_service)
 
     mock_ws.accept.assert_awaited_once()
     mock_ws.close.assert_awaited_once_with(code=4001, reason="Authentication is required")
@@ -87,16 +88,17 @@ async def test_exception_in_handle(mocker):
         receive_json=mocker.AsyncMock(side_effect=[{"type": "connect", "name": "TestUser"}, Exception("test error")]),
     )
 
-    mock_room = SimpleNamespace(add_user=mocker.Mock(), remove_user=mocker.Mock())
-    mocker.patch.object(room_storage, "get_room", return_value=mock_room)
+    mock_room = SimpleNamespace(add_user=mocker.AsyncMock(), remove_user=mocker.AsyncMock())
+    mock_service = MagicMock()
+    mock_service.get_room.return_value = mock_room
 
-    mocker.patch("app.ws.websocket.UserHandler.handle", new=mocker.AsyncMock(side_effect=[Exception("test error")]))
+    mocker.patch("app.ws.router.UserHandler.handle", new=mocker.AsyncMock(side_effect=[Exception("test error")]))
 
-    await websocket_endpoint(mock_ws, "room123")
+    await websocket_endpoint(mock_ws, "room123", room_service=mock_service)
 
     mock_ws.accept.assert_awaited_once()
     mock_ws.close.assert_awaited_once_with(code=1011)
-    mock_room.remove_user.assert_called_once()
+    mock_room.remove_user.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -112,15 +114,16 @@ async def test_multiple_messages(mocker):
         receive_json=mocker.AsyncMock(side_effect=side_effect),
     )
 
-    mock_room = SimpleNamespace(add_user=mocker.Mock(), remove_user=mocker.Mock())
-    mocker.patch.object(room_storage, "get_room", return_value=mock_room)
+    mock_room = SimpleNamespace(add_user=mocker.AsyncMock(), remove_user=mocker.AsyncMock())
+    mock_service = MagicMock()
+    mock_service.get_room.return_value = mock_room
 
-    mock_handle = mocker.patch("app.ws.websocket.UserHandler.handle", new=mocker.AsyncMock())
+    mock_handle = mocker.patch("app.ws.router.UserHandler.handle", new=mocker.AsyncMock())
 
     with pytest.raises(asyncio.CancelledError):
-        await websocket_endpoint(mock_ws, "room123")
+        await websocket_endpoint(mock_ws, "room123", room_service=mock_service)
 
     assert mock_handle.await_count == 2  # info + status
     mock_ws.accept.assert_awaited_once()
-    mock_room.add_user.assert_called_once()
-    mock_room.remove_user.assert_called_once()
+    mock_room.add_user.assert_awaited_once()
+    mock_room.remove_user.assert_awaited_once()

@@ -1,7 +1,9 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from bs4 import BeautifulSoup
 
-from app.services.rezka.rezka_service import RezkaService
+from app.modules.rezka.service import RezkaService
 
 HTML_QUICK_SEARCH = """
 <ul>
@@ -53,11 +55,12 @@ def service():
     return RezkaService()
 
 
-def test_quick_search_parses_correctly(service, mocker):
+@pytest.mark.asyncio
+async def test_quick_search_parses_correctly(service, mocker):
     soup = BeautifulSoup(HTML_QUICK_SEARCH, "html.parser")
-    mocker.patch.object(service, "post", return_value=soup)
+    mocker.patch.object(service, "post", AsyncMock(return_value=soup))
 
-    result = service.quick_search("рик")
+    result = await service.quick_search("рик")
     assert len(result) == 1
     item = result[0]
     assert item.id == 12345
@@ -67,22 +70,46 @@ def test_quick_search_parses_correctly(service, mocker):
     assert item.url == "/12345-rik.html"
 
 
-def test_quick_info_movie_parses_correctly(service, mocker):
-    soup = BeautifulSoup(HTML_QUICK_INFO, "html.parser")
-    mocker.patch.object(service, "post", return_value=soup)
+@pytest.mark.asyncio
+async def test_quick_search_skips_items_without_id(service, mocker):
+    """Элементы без числового id в href не должны ронять весь поиск."""
+    soup = BeautifulSoup(
+        '<ul><li><a href="/bad-url.html"><span class="enty">X</span></a></li></ul>',
+        "html.parser",
+    )
+    mocker.patch.object(service, "post", AsyncMock(return_value=soup))
+    result = await service.quick_search("x")
+    assert result == []
 
-    info = service.quick_info_movie(1)
+
+@pytest.mark.asyncio
+async def test_quick_info_movie_parses_correctly(service, mocker):
+    soup = BeautifulSoup(HTML_QUICK_INFO, "html.parser")
+    mocker.patch.object(service, "post", AsyncMock(return_value=soup))
+
+    info = await service.quick_info_movie(1)
     assert info.id == 1
     assert info.title == "Рик и Морти"
     assert "Комедия" in info.genres
     assert info.rating == "9.8"
 
 
-def test_search_parses_results(service, mocker):
-    soup = BeautifulSoup(HTML_SEARCH, "html.parser")
-    mocker.patch.object(service, "get", return_value=soup)
+@pytest.mark.asyncio
+async def test_quick_info_movie_handles_empty_response(service, mocker):
+    """Пустой HTML не должен ронять метод IndexError'ом."""
+    soup = BeautifulSoup("", "html.parser")
+    mocker.patch.object(service, "post", AsyncMock(return_value=soup))
 
-    results = service.search("рик")
+    info = await service.quick_info_movie(1)
+    assert info.genres == []
+
+
+@pytest.mark.asyncio
+async def test_search_parses_results(service, mocker):
+    soup = BeautifulSoup(HTML_SEARCH, "html.parser")
+    mocker.patch.object(service, "get", AsyncMock(return_value=soup))
+
+    results = await service.search("рик")
     assert len(results) == 1
     item = results[0]
     assert item.id == 777
@@ -93,11 +120,12 @@ def test_search_parses_results(service, mocker):
     assert item.url.startswith("https://rezka.ag")
 
 
-def test_info_movie_parses_all_fields(service, mocker):
+@pytest.mark.asyncio
+async def test_info_movie_parses_all_fields(service, mocker):
     soup = BeautifulSoup(HTML_INFO, "html.parser")
-    mocker.patch.object(service, "get", return_value=soup)
+    mocker.patch.object(service, "get", AsyncMock(return_value=soup))
 
-    info = service.info_movie("https://rezka.ag/cartoons/12345-rik.html")
+    info = await service.info_movie("https://rezka.ag/cartoons/12345-rik.html")
     assert info.id == 12345
     assert info.title == "Рик и Морти"
     assert info.alter_title == "Rick and Morty"

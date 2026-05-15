@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.room.user_handler import UserHandler
+from app.modules.room.handler import UserHandler
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,7 @@ async def test_send_to_room_sends_to_other_users():
     handler = UserHandler(user1, room)
     data = {"type": "info", "msg": "test"}
 
-    await handler.send_to_room(data)
+    await handler._broadcast(data)
 
     user2.websocket.send_json.assert_awaited_once_with(data)
     user3.websocket.send_json.assert_awaited_once_with(data)
@@ -82,6 +82,7 @@ async def test_handle_pause_flow():
     user = MagicMock()
     room = MagicMock()
     room.seek = AsyncMock()
+    room.pause = AsyncMock()
 
     handler = UserHandler(user, room)
 
@@ -89,8 +90,50 @@ async def test_handle_pause_flow():
     await handler.handle(data)
 
     room.seek.assert_awaited_once_with(30, user)
+    room.pause.assert_awaited_once_with(user)
     room.load.assert_called_once_with(30)
     assert room.is_paused is True
+
+
+@pytest.mark.asyncio
+async def test_handle_set_video_broadcasts():
+    user = MagicMock()
+    room = MagicMock()
+    room.set_video_broadcast = AsyncMock()
+
+    handler = UserHandler(user, room)
+
+    data = {"type": "set_video", "video_url": "https://example.com/x.mp4", "current_time": 5}
+    await handler.handle(data)
+
+    room.set_video_broadcast.assert_awaited_once_with("https://example.com/x.mp4", 5)
+
+
+@pytest.mark.asyncio
+async def test_handle_set_video_without_url_is_ignored():
+    user = MagicMock()
+    room = MagicMock()
+    room.set_video_broadcast = AsyncMock()
+
+    handler = UserHandler(user, room)
+
+    await handler.handle({"type": "set_video"})
+    room.set_video_broadcast.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_load_triggers_play_when_ready():
+    user = MagicMock()
+    room = MagicMock()
+    room.is_paused = False
+    room.check_is_loaded = AsyncMock(return_value=True)
+    room.play = AsyncMock()
+
+    handler = UserHandler(user, room)
+
+    await handler.handle({"type": "load", "current_time": 10})
+    room.load.assert_called_once_with(10)
+    room.play.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -102,6 +145,5 @@ async def test_handle_invalid_type_does_nothing():
     data = {"type": "unknown", "foo": "bar"}
     await handler.handle(data)
 
-    # ничего не должно произойти
     room.play.assert_not_called()
     room.seek.assert_not_called()

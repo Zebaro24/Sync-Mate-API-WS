@@ -1,6 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from bs4 import BeautifulSoup
 
-from app.services.rezka.rezka_base import RezkaBase
+from app.modules.rezka._base import RezkaBase
 
 
 def test_get_random_proxy_returns_none_when_empty():
@@ -36,36 +39,62 @@ def test_parse_response_html(mocker):
     assert result.p.text == "Hello"
 
 
-def test_get_calls_httpx_get(mocker):
-    mock_get = mocker.patch("app.services.rezka.rezka_base.get")
-    mock_get.return_value = mocker.MagicMock(text="<html></html>")
+@pytest.mark.asyncio
+async def test_get_calls_request(mocker):
+    base = RezkaBase()
+    expected = BeautifulSoup("<html></html>", "html.parser")
+    mock_request = AsyncMock(return_value=expected)
+    mocker.patch.object(RezkaBase, "_request", mock_request)
+
+    result = await base.get("/page", params={"q": 1})
+
+    mock_request.assert_awaited_once()
+    assert result is expected
+
+
+@pytest.mark.asyncio
+async def test_post_calls_request(mocker):
+    base = RezkaBase()
+    expected = BeautifulSoup("<html></html>", "html.parser")
+    mock_request = AsyncMock(return_value=expected)
+    mocker.patch.object(RezkaBase, "_request", mock_request)
+
+    result = await base.post("/submit", data={"a": 1})
+
+    mock_request.assert_awaited_once()
+    assert result is expected
+
+
+@pytest.mark.asyncio
+async def test_request_raises_for_status(mocker):
+    """При HTTP-ошибке _request должен пробросить httpx.HTTPError."""
+    import httpx
 
     base = RezkaBase()
-    mock_parse = mocker.patch.object(
-        base, "_parse_response", return_value=BeautifulSoup("<html></html>", "html.parser")
-    )
 
-    result = base.get("/page", params={"q": 1})
+    class _MockResponse:
+        text = ""
 
-    mock_get.assert_called_once()
-    mock_parse.assert_called_once()
-    assert result == BeautifulSoup("<html></html>", "html.parser")
+        def raise_for_status(self):
+            raise httpx.HTTPStatusError("boom", request=MagicMock(), response=MagicMock())
 
+        def json(self):  # pragma: no cover
+            return {}
 
-def test_post_calls_httpx_post(mocker):
-    mock_post = mocker.patch("app.services.rezka.rezka_base.post")
-    mock_post.return_value = mocker.MagicMock(text="<html></html>")
+    class _MockClient:
+        async def __aenter__(self):
+            return self
 
-    base = RezkaBase()
-    mock_parse = mocker.patch.object(
-        base, "_parse_response", return_value=BeautifulSoup("<html></html>", "html.parser")
-    )
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
 
-    result = base.post("/submit", data={"a": 1})
+        async def request(self, method, url, **kwargs):
+            return _MockResponse()
 
-    mock_post.assert_called_once()
-    mock_parse.assert_called_once()
-    assert result == BeautifulSoup("<html></html>", "html.parser")
+    mocker.patch("app.modules.rezka._base.httpx.AsyncClient", return_value=_MockClient())
+
+    with pytest.raises(httpx.HTTPError):
+        await base._request("GET", "/page")
 
 
 def test_get_text_returns_none_if_tag_none():

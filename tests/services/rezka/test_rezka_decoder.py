@@ -2,7 +2,7 @@ import base64
 
 import pytest
 
-from app.services.rezka.rezka_decoder import StreamDecoder
+from app.modules.rezka._decoder import StreamDecoder
 
 
 def encode_data(s: str) -> str:
