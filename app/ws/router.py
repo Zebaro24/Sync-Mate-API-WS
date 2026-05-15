@@ -48,7 +48,8 @@ async def websocket_endpoint(
         logger.error("WebSocket error for user '%s': %s", user.name, e)
         try:
             await websocket.close(code=1011)
-        except Exception:
-            pass
+        except Exception as close_err:
+            # Сокет уже мог быть закрыт клиентом — это нормально, просто логируем.
+            logger.debug("Failed to close WebSocket cleanly: %s", close_err)
     finally:
         await room.remove_user(user)

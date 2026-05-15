@@ -169,9 +169,9 @@ class RezkaStream(RezkaBase):
         season_elems = BeautifulSoup(str(response["seasons"]), "html.parser").select("li")
         seasons: dict[int, list[int]] = {}
         for elem in season_elems:
-            season_id = elem.get("data-tab_id") or elem.get("data-season_id")
-            if season_id is not None:
-                seasons[int(str(season_id))] = []
+            sid_attr = elem.get("data-tab_id") or elem.get("data-season_id")
+            if sid_attr is not None:
+                seasons[int(str(sid_attr))] = []
                 continue
             # Фолбэк: извлекаем число из текста, что устойчивее к смене локали.
             match = _SEASON_NUMBER_RE.search(elem.get_text())
@@ -180,8 +180,8 @@ class RezkaStream(RezkaBase):
 
         episode_elems = BeautifulSoup(str(response["episodes"]), "html.parser").select("li")
         for elem in episode_elems:
-            season_id = int(str(elem["data-season_id"]))
-            episode_id = int(str(elem["data-episode_id"]))
+            season_id: int = int(str(elem["data-season_id"]))
+            episode_id: int = int(str(elem["data-episode_id"]))
             seasons.setdefault(season_id, []).append(episode_id)
 
         return SeriesResponse(
