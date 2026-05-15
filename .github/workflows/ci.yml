@@ -118,9 +118,6 @@ jobs:
   test:
     name: Tests & Coverage
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ '3.11', '3.12', '3.13' ]
     env:
       PYTHONPATH: .
       PROXIES_LIST: ${{ secrets.PROXIES_LIST }}
@@ -130,7 +127,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.13'
 
       - name: Cache Poetry dependencies
         id: cache-deps
