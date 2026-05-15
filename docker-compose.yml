@@ -4,14 +4,5 @@ services:
     image: ghcr.io/zebaro24/sync-mate-api-ws:latest
     container_name: sync-mate-api-ws
     restart: unless-stopped
-    env_file: .env
     ports:
       - "${SERVER_PORT:-8000}:8000"
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: sync-mate-cloudflared
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - sync-mate-api-ws
