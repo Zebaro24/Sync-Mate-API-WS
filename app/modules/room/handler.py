@@ -1,9 +1,25 @@
 import asyncio
 import logging
+import math
+from typing import Any
 
 from app.modules.room.models import Room, User
 
 logger = logging.getLogger(__name__)
+
+# Разрешённый префикс источника видео — принимаем только Rezka.
+ALLOWED_VIDEO_PREFIX = "https://rezka.ag/"
+
+
+def _coerce_time(value: Any) -> float:
+    """Безопасно приводит значение времени к неотрицательному конечному float."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if not math.isfinite(result):
+        return 0.0
+    return max(0.0, result)
 
 
 class UserHandler:
@@ -15,7 +31,7 @@ class UserHandler:
 
     async def _broadcast(self, data: dict) -> None:
         users = self.room.get_users_exc(self.user)
-        await asyncio.gather(*(u.websocket.send_json(data) for u in users))
+        await asyncio.gather(*(u.websocket.send_json(data) for u in users), return_exceptions=True)
 
     async def handle(self, data: dict) -> None:
         action = data.get("type")
@@ -32,8 +48,11 @@ class UserHandler:
             await self._handle_set_video(data)
             return
 
-        self.user.current_time = float(data.get("current_time") or 0)
-        self.user.downloaded_time = float(data.get("downloaded_time") or 0)
+        self.user.current_time = _coerce_time(data.get("current_time"))
+        self.user.downloaded_time = _coerce_time(data.get("downloaded_time"))
+        # Длительность приходит со status; не затираем известное значение, если поля нет.
+        if "duration" in data:
+            self.user.duration = _coerce_time(data.get("duration"))
 
         if action == "status":
             await self._handle_status(data)
@@ -59,7 +78,7 @@ class UserHandler:
         await self._broadcast(broadcast)
 
     async def _handle_play(self, data: dict) -> None:
-        current_time = float(data.get("current_time") or 0)
+        current_time = _coerce_time(data.get("current_time"))
         await self.room.seek(current_time, self.user)
         self.room.load(current_time)
         self.room.is_paused = False
@@ -67,7 +86,7 @@ class UserHandler:
             await self.room.play()
 
     async def _handle_pause(self, data: dict) -> None:
-        current_time = float(data.get("current_time") or 0)
+        current_time = _coerce_time(data.get("current_time"))
         # Сообщаем остальным позицию и собственно ставим на паузу — без второго
         # вызова другие клиенты продолжали бы воспроизведение.
         await self.room.seek(current_time, self.user)
@@ -77,7 +96,7 @@ class UserHandler:
 
     async def _handle_load(self, data: dict) -> None:
         """Клиент просит пересинхронизироваться с текущей позицией комнаты."""
-        current_time = float(data.get("current_time") or 0)
+        current_time = _coerce_time(data.get("current_time"))
         self.room.load(current_time)
         if await self.room.check_is_loaded(self.user):
             if self.room.is_paused:
@@ -91,5 +110,8 @@ class UserHandler:
         if not isinstance(video_url, str) or not video_url:
             logger.warning("set_video without valid video_url from user '%s'", self.user.name)
             return
-        current_time = float(data.get("current_time") or 0)
+        if not video_url.startswith(ALLOWED_VIDEO_PREFIX):
+            logger.warning("set_video with non-rezka video_url from user '%s'", self.user.name)
+            return
+        current_time = _coerce_time(data.get("current_time"))
         await self.room.set_video_broadcast(video_url, current_time)

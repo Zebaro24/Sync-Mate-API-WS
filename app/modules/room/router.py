@@ -69,4 +69,7 @@ async def redirect_to_video(
     room = room_service.get_room(room_id)
     if room is None:
         raise HTTPException(status_code=404, detail="Room not found")
+    # Редиректим только на разрешённый источник.
+    if not room.video_url.startswith("https://rezka.ag/"):
+        raise HTTPException(status_code=400, detail="Invalid video URL")
     return RedirectResponse(url=room.video_url, status_code=307)

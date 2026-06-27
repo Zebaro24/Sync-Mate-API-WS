@@ -2,7 +2,10 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
+
+# Источник видео ограничен только Rezka.
+ALLOWED_VIDEO_PREFIX = "https://rezka.ag/"
 
 
 class RoomCreate(BaseModel):
@@ -10,11 +13,25 @@ class RoomCreate(BaseModel):
     video_url: str
     current_time: float = 0.0
 
+    @field_validator("video_url")
+    @classmethod
+    def _validate_video_url(cls, value: str) -> str:
+        if not value.startswith(ALLOWED_VIDEO_PREFIX):
+            raise ValueError("video_url must start with https://rezka.ag/")
+        return value
+
 
 class RoomUpdate(BaseModel):
     name: Optional[str] = None
     video_url: Optional[str] = None
     current_time: Optional[float] = None
+
+    @field_validator("video_url")
+    @classmethod
+    def _validate_video_url(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and not value.startswith(ALLOWED_VIDEO_PREFIX):
+            raise ValueError("video_url must start with https://rezka.ag/")
+        return value
 
 
 class RoomInternal(RoomCreate):

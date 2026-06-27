@@ -16,6 +16,9 @@ class Settings(BaseSettings):
 
     REQUIRED_DOWNLOAD_TIME: int = 15
 
+    # Допуск (сек) при сравнении позиций воспроизведения — float не сравниваем на равенство.
+    SYNC_TOLERANCE: float = 1.0
+
     REZKA_URL: str = "https://rezka.ag"
 
     PROXIES_LIST: list | str | None = None

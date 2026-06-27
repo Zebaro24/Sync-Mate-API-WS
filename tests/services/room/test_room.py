@@ -9,6 +9,7 @@ from app.modules.room.models import Room
 def mock_settings(mocker):
     fake_settings = MagicMock()
     fake_settings.REQUIRED_DOWNLOAD_TIME = 5
+    fake_settings.SYNC_TOLERANCE = 1.0
     mocker.patch("app.modules.room.models.settings", fake_settings)
     return fake_settings
 
@@ -21,6 +22,7 @@ def mock_user():
     user.websocket = websocket
     user.current_time = 0
     user.downloaded_time = 10
+    user.duration = 0.0
     return user
 
 
@@ -89,6 +91,60 @@ async def test_check_is_loaded_false_due_to_download_time(mock_user, mock_settin
     result = await room.check_is_loaded(check_user=mock_user)
 
     assert result is False
+    assert room.is_loaded is False
+
+
+@pytest.mark.asyncio
+async def test_check_is_loaded_within_tolerance(mock_user, mock_settings):
+    """Небольшое расхождение позиции (в пределах допуска) не мешает готовности."""
+    room = Room("1", "Room1", "video.mp4", 0, created_at="now")
+    await room.add_user(mock_user)
+
+    mock_user.current_time = 0.5  # < SYNC_TOLERANCE (1.0)
+    mock_user.downloaded_time = 10
+
+    result = await room.check_is_loaded(check_user=mock_user)
+
+    assert result is True
+    mock_user.websocket.send_json.assert_not_awaited()  # никого не дёргаем seek'ом
+
+
+@pytest.mark.asyncio
+async def test_check_is_loaded_seeks_laggard_beyond_tolerance(mock_user, mock_settings):
+    """Расхождение больше допуска — отстающего возвращаем seek'ом, готовности нет."""
+    room = Room("1", "Room1", "video.mp4", 0, created_at="now")
+    await room.add_user(mock_user)
+
+    mock_user.current_time = 5  # > SYNC_TOLERANCE
+    mock_user.downloaded_time = 10
+
+    result = await room.check_is_loaded(check_user=mock_user)
+
+    assert result is False
+    mock_user.websocket.send_json.assert_awaited_once_with({"type": "seek", "current_time": 0})
+
+
+@pytest.mark.asyncio
+async def test_check_is_loaded_end_of_video(mock_user, mock_settings):
+    """У конца ролика остаток меньше REQUIRED_DOWNLOAD_TIME — буфера всё равно хватает."""
+    room = Room("1", "Room1", "video.mp4", 98, created_at="now")
+    await room.add_user(mock_user)
+
+    mock_user.current_time = 98
+    mock_user.duration = 100.0  # до конца 2 сек
+    mock_user.downloaded_time = 2  # меньше REQUIRED_DOWNLOAD_TIME (5), но достаточно
+
+    result = await room.check_is_loaded(check_user=mock_user)
+
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_add_user_resets_is_loaded(mock_user):
+    """Новый участник сбрасывает признак готовности комнаты."""
+    room = Room("1", "Room1", "video.mp4", 0, created_at="now")
+    room.is_loaded = True
+    await room.add_user(mock_user)
     assert room.is_loaded is False
 
 

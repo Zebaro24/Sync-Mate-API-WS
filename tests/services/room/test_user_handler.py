@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.modules.room.handler import UserHandler
+from app.modules.room.handler import UserHandler, _coerce_time
 
 
 @pytest.mark.asyncio
@@ -103,10 +103,22 @@ async def test_handle_set_video_broadcasts():
 
     handler = UserHandler(user, room)
 
-    data = {"type": "set_video", "video_url": "https://example.com/x.mp4", "current_time": 5}
+    data = {"type": "set_video", "video_url": "https://rezka.ag/films/x.html", "current_time": 5}
     await handler.handle(data)
 
-    room.set_video_broadcast.assert_awaited_once_with("https://example.com/x.mp4", 5)
+    room.set_video_broadcast.assert_awaited_once_with("https://rezka.ag/films/x.html", 5)
+
+
+@pytest.mark.asyncio
+async def test_handle_set_video_non_rezka_is_ignored():
+    user = MagicMock()
+    room = MagicMock()
+    room.set_video_broadcast = AsyncMock()
+
+    handler = UserHandler(user, room)
+
+    await handler.handle({"type": "set_video", "video_url": "https://example.com/x.mp4"})
+    room.set_video_broadcast.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -147,3 +159,32 @@ async def test_handle_invalid_type_does_nothing():
 
     room.play.assert_not_called()
     room.seek.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_status_saves_duration():
+    user = MagicMock()
+    room = MagicMock()
+    room.is_loaded = True  # пропускаем проверку готовности
+    room.get_users_exc.return_value = []
+
+    handler = UserHandler(user, room)
+
+    await handler.handle({"type": "status", "current_time": 10, "downloaded_time": 20, "duration": 120})
+    assert user.duration == 120.0
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (5, 5.0),
+        ("7.5", 7.5),
+        (-3, 0.0),
+        (None, 0.0),
+        ("abc", 0.0),
+        (float("nan"), 0.0),
+        (float("inf"), 0.0),
+    ],
+)
+def test_coerce_time(value, expected):
+    assert _coerce_time(value) == expected

@@ -17,6 +17,7 @@ class User:
         self.websocket = websocket
         self.current_time: float = 0.0
         self.downloaded_time: float = 0.0
+        self.duration: float = 0.0
         self.info: dict[str, Any] = {}
         logger.info("User '%s' connected from %s", name, websocket.client)
 
@@ -45,6 +46,8 @@ class Room:
     async def add_user(self, user: User) -> None:
         async with self._lock:
             self.user_storage.append(user)
+            # Сбрасываем готовность: поздний участник обязан пересинхронизироваться.
+            self.is_loaded = False
 
     async def remove_user(self, user: User) -> None:
         async with self._lock:
@@ -64,18 +67,26 @@ class Room:
         self.current_time = current_time
         self.is_loaded = False
 
+    def _buffer_needed(self, user: "User") -> float:
+        """Сколько секунд буфера нужно пользователю: ближе к концу ролика остаток меньше."""
+        if user.duration > 0:
+            return min(float(settings.REQUIRED_DOWNLOAD_TIME), max(0.0, user.duration - user.current_time))
+        return float(settings.REQUIRED_DOWNLOAD_TIME)
+
     async def check_is_loaded(self, check_user: "User") -> bool:
         async with self._lock:
-            # Корректируем всех, у кого позиция расходится с комнатной — иначе
-            # один отстающий пользователь блокирует запуск воспроизведения навсегда.
-            laggards = [u for u in self.user_storage if u.current_time != self.current_time]
+            tol = settings.SYNC_TOLERANCE
+            # Корректируем всех, у кого позиция расходится с комнатной больше допуска —
+            # иначе один отстающий пользователь блокирует запуск воспроизведения навсегда.
+            laggards = [u for u in self.user_storage if abs(u.current_time - self.current_time) > tol]
             if laggards:
                 await asyncio.gather(
-                    *(u.websocket.send_json({"type": "seek", "current_time": self.current_time}) for u in laggards)
+                    *(u.websocket.send_json({"type": "seek", "current_time": self.current_time}) for u in laggards),
+                    return_exceptions=True,
                 )
 
             all_ready = len(self.user_storage) > 0 and all(
-                u.current_time == self.current_time and u.downloaded_time >= settings.REQUIRED_DOWNLOAD_TIME
+                abs(u.current_time - self.current_time) <= tol and u.downloaded_time >= self._buffer_needed(u) - tol
                 for u in self.user_storage
             )
             if all_ready:
@@ -84,12 +95,14 @@ class Room:
 
     async def play(self) -> None:
         logger.info("Room '%s' → play", self.name)
-        await asyncio.gather(*(u.websocket.send_json({"type": "play"}) for u in self.user_storage))
+        await asyncio.gather(
+            *(u.websocket.send_json({"type": "play"}) for u in self.user_storage), return_exceptions=True
+        )
 
     async def pause(self, exception_user: "User | None" = None) -> None:
         logger.info("Room '%s' → pause", self.name)
         users = self.get_users_exc(exception_user)
-        await asyncio.gather(*(u.websocket.send_json({"type": "pause"}) for u in users))
+        await asyncio.gather(*(u.websocket.send_json({"type": "pause"}) for u in users), return_exceptions=True)
 
     async def seek(
         self,
@@ -102,7 +115,10 @@ class Room:
             await user.websocket.send_json({"type": "seek", "current_time": current_time})
             return
         users = self.get_users_exc(exception_user)
-        await asyncio.gather(*(u.websocket.send_json({"type": "seek", "current_time": current_time}) for u in users))
+        await asyncio.gather(
+            *(u.websocket.send_json({"type": "seek", "current_time": current_time}) for u in users),
+            return_exceptions=True,
+        )
 
     async def set_video_broadcast(self, video_url: str, current_time: float = 0.0) -> None:
         """Обновить URL видео в комнате и оповестить всех участников."""
@@ -112,11 +128,14 @@ class Room:
             *(
                 u.websocket.send_json({"type": "set_video", "video_url": video_url, "current_time": current_time})
                 for u in self.user_storage
-            )
+            ),
+            return_exceptions=True,
         )
 
     async def remove_block_pause(self) -> None:
-        await asyncio.gather(*(u.websocket.send_json({"type": "remove_block_pause"}) for u in self.user_storage))
+        await asyncio.gather(
+            *(u.websocket.send_json({"type": "remove_block_pause"}) for u in self.user_storage), return_exceptions=True
+        )
 
     def __repr__(self) -> str:
         return f"<Room name={self.name!r} id={self.room_id!r} users={len(self.user_storage)}>"
