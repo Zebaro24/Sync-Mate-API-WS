@@ -1,5 +1,8 @@
 import base64
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 class StreamDecoder:
@@ -28,11 +31,13 @@ class StreamDecoder:
         if not base64_encoded_stream:
             raise ValueError("base64_encoded_stream cannot be empty")
 
+        logger.debug("StreamDecoder.decode input len=%d head=%.80s", len(base64_encoded_stream), base64_encoded_stream)
         try:
 
             decoded = cls._decode_stream_base64(base64_encoded_stream)
         except Exception as e:
             raise Exception(f"Error during decoding: {e}")
+        logger.debug("StreamDecoder decoded base64 → len=%d parts=%d", len(decoded), decoded.count(",") + 1)
 
         streams: dict[str, str] = {}
         for part in decoded.split(","):
@@ -46,4 +51,5 @@ class StreamDecoder:
             mp4_url = next((u for u in urls if u.endswith(".mp4")), None)
             if mp4_url:
                 streams[quality] = mp4_url
+        logger.debug("StreamDecoder.decode → %d stream(s) qualities=%s", len(streams), list(streams.keys()))
         return streams

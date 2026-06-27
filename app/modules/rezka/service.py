@@ -44,6 +44,7 @@ class RezkaService(RezkaBase):
                     rating=self.get_text(item.select_one("i.hd-tooltip")),
                 )
             )
+        logger.debug("Rezka quick_search '%.80s' → %d result(s)", movie_name, len(results))
         return results
 
     async def quick_info_movie(self, movie_id: int) -> QuickInfoMovieResponse:
@@ -56,6 +57,7 @@ class RezkaService(RezkaBase):
         # Последний блок .b-content__bubble_text обычно содержит жанры, но он может
         # отсутствовать при отсутствии фильма — отдаём пустой список без падения.
         genres = [self.get_text(g) or "" for g in bubble_texts[-1].select("a")] if bubble_texts else []
+        logger.debug("Rezka quick_info_movie id=%d → %d genre(s)", movie_id, len(genres))
         return QuickInfoMovieResponse(
             id=movie_id,
             category=self.get_text(soup.select_one("div.b-content__catlabel")) or "",
@@ -85,6 +87,7 @@ class RezkaService(RezkaBase):
                     url=str(movie_elem.get("data-url", "")),
                 )
             )
+        logger.debug("Rezka search '%.80s' limit=%d → %d result(s)", movie_name, limit, len(results))
         return results
 
     async def info_movie(self, movie_url: str) -> InfoMovieResponse:
@@ -125,6 +128,13 @@ class RezkaService(RezkaBase):
         if not translators and translate_id:
             translators[translate_id] = None
 
+        logger.debug(
+            "Rezka info_movie %.80s → type=%s translators=%d genres=%d",
+            movie_url,
+            content_type,
+            len(translators),
+            len(genres),
+        )
         return InfoMovieResponse(
             id=movie_id,
             title=self.get_text(soup.select_one("div.b-post__title")) or "",
@@ -149,7 +159,9 @@ class RezkaStream(RezkaBase):
         url_value = response.get("url")
         if not isinstance(url_value, str):
             raise ValueError(f"url must be str, got {type(url_value).__name__}")
-        return MovieResponse(urls=StreamDecoder.decode(url_value))
+        urls = StreamDecoder.decode(url_value)
+        logger.debug("Rezka get_movie_source id=%d translator=%d → %d quality(ies)", movie_id, translator_id, len(urls))
+        return MovieResponse(urls=urls)
 
     async def get_series_source(
         self,
@@ -184,7 +196,17 @@ class RezkaStream(RezkaBase):
             episode_id: int = int(str(elem["data-episode_id"]))
             seasons.setdefault(season_id, []).append(episode_id)
 
+        urls = StreamDecoder.decode(str(response["url"]))
+        logger.debug(
+            "Rezka get_series_source id=%d translator=%d season=%s episode=%s → %d season(s) %d quality(ies)",
+            series_id,
+            translator_id,
+            season,
+            episode,
+            len(seasons),
+            len(urls),
+        )
         return SeriesResponse(
             seasons=seasons,
-            urls=StreamDecoder.decode(str(response["url"])),
+            urls=urls,
         )

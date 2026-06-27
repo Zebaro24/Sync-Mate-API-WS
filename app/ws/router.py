@@ -20,9 +20,11 @@ async def websocket_endpoint(
     room_service: RoomService = Depends(get_room_service),
 ) -> None:
     await websocket.accept()
+    logger.debug("WS accepted room=%s", room_id)
 
     room = room_service.get_room(room_id)
     if room is None:
+        logger.debug("WS close 4000 (room not found) room=%s", room_id)
         await websocket.close(code=4000, reason="Room not found")
         return
 
@@ -30,6 +32,7 @@ async def websocket_endpoint(
         raw = await websocket.receive_json()
         connect = ConnectMessage.model_validate(raw)
     except (ValidationError, Exception):
+        logger.debug("WS close 4001 (connect required / invalid) room=%s", room_id)
         await websocket.close(code=4001, reason="Authentication is required")
         return
 
@@ -37,10 +40,19 @@ async def websocket_endpoint(
     await room.add_user(user)
     handler = UserHandler(user, room)
     await websocket.send_json({"type": "connect", "id": user.user_id})
+    logger.debug("WS connect ok room=%s user='%s' id=%s", room_id, user.name, user.user_id)
 
     try:
         while True:
             data = await websocket.receive_json()
+            logger.debug(
+                "WS recv room=%s user='%s' type=%s current_time=%s downloaded_time=%s",
+                room_id,
+                user.name,
+                data.get("type") if isinstance(data, dict) else None,
+                data.get("current_time") if isinstance(data, dict) else None,
+                data.get("downloaded_time") if isinstance(data, dict) else None,
+            )
             await handler.handle(data)
     except WebSocketDisconnect:
         logger.info("User '%s' disconnected from room '%s'", user.name, room_id)
@@ -53,3 +65,4 @@ async def websocket_endpoint(
             logger.debug("Failed to close WebSocket cleanly: %s", close_err)
     finally:
         await room.remove_user(user)
+        logger.debug("WS finally remove_user room=%s user='%s'", room_id, user.name)

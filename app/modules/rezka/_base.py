@@ -38,6 +38,8 @@ class RezkaBase:
         is_json: bool = False,
     ) -> Union[dict, BeautifulSoup]:
         proxy = self._get_random_proxy()
+        # Логируем только факт использования прокси (yes/no), но НЕ сам URL прокси с кредами.
+        logger.debug("Rezka request %s %s (proxy=%s)", method, url, "yes" if proxy else "no")
         async with httpx.AsyncClient(proxy=proxy, timeout=_DEFAULT_TIMEOUT, follow_redirects=True) as client:
             try:
                 response = await client.request(method, self.URL.join(url), params=params, data=data)
@@ -45,6 +47,9 @@ class RezkaBase:
             except httpx.HTTPError as exc:
                 logger.warning("Rezka %s %s failed: %s", method, url, exc)
                 raise
+        logger.debug(
+            "Rezka response %s %s → status=%d bytes=%d", method, url, response.status_code, len(response.content)
+        )
         return self._parse_response(response, is_json)
 
     @overload
