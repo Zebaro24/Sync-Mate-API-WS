@@ -408,7 +408,7 @@ load · set_video · remove_block_pause`.
 > Не путайте `WSMessageTypes` (протокол с сервером) и `BrowserMessageTypes` (внутренний IPC
 > расширения) — это разные enum'ы на фронте.
 
-После правки протокола обновляйте `DOCUMENTATION.md §2.5` и прогоняйте gate на обеих сторонах.
+После правки протокола обновляйте `docs/websocket-protocol.md` и прогоняйте gate на обеих сторонах.
 
 ---
 
@@ -465,7 +465,7 @@ load · set_video · remove_block_pause`.
 | Не вызывать `play()`/`seek()`/`pause()`/`set_video_broadcast()` внутри `async with self._lock` | рекурсивная блокировка/дедлок на параллельном `_handle_*` (§10) |
 | Не глушить `httpx.HTTPError` из rezka без причины | ошибки rezka.ag должны доходить до клиента как 500 (`_base.py:45-47`) |
 | Не нарушать направление слоёв | `modules/**` не импортирует `api`/`ws`/`main`; `rezka` ⊥ `room` (§7) |
-| Не менять `type` WS-сообщения только на бэке | сломает синхронизацию; правьте обе стороны + `DOCUMENTATION.md §2.5`, ловит `protocol_sync.py` (§12) |
+| Не менять `type` WS-сообщения только на бэке | сломает синхронизацию; правьте обе стороны + `docs/websocket-protocol.md`, ловит `protocol_sync.py` (§12) |
 
 ### Инструменты и процесс
 
@@ -496,7 +496,7 @@ load · set_video · remove_block_pause`.
 
 - [`../CLAUDE.md`](../CLAUDE.md) — тонкие канонические правила бэкенда (стек, запуск, race conditions).
 - [`../../CLAUDE.md`](../../CLAUDE.md) — корневой гид по обоим подпроектам.
-- [`../../DOCUMENTATION.md`](../../DOCUMENTATION.md) — полная техдокументация и WS-протокол §2.5
+- [`../../DOCUMENTATION.md`](../../DOCUMENTATION.md) — полная техдокументация и WS-протокол (docs/websocket-protocol.md)
   (учтите дрейф по деплою — см. §14).
 - [`../../.claude/docs/architecture.md`](../../.claude/docs/architecture.md) — слои и инварианты,
   которые проверяют arch/protocol-чеки.
