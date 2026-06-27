@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sync-mate-api-ws"
-version = "0.1.0"
+version = "0.2.2"
 description = ""
 authors = ["Zebaro <denok100100@gmail.com>"]
 readme = "README.md"
