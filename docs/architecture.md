@@ -79,19 +79,19 @@ app = FastAPI(
 
 Все метаданные берутся из `Settings` — см. §3. `debug=settings.debug` включает подробные трейсбэки FastAPI.
 
-### 2.3. CORS (`app/main.py:53-59`)
+### 2.3. CORS (`app/main.py`)
 
 ```python
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 ```
 
-Политика максимально открытая: расширение работает с произвольных страниц Rezka, поэтому конкретный origin заранее неизвестен. **ГочА:** комбинация `allow_origins=["*"]` + `allow_credentials=True` формально противоречит спецификации CORS (браузер не отправит credentials при wildcard-origin). На практике расширение не полагается на cookie-credentials, поэтому проблема не проявляется, но это место стоит знать.
+Origin открыт (расширение работает с произвольных страниц Rezka и из `chrome-extension://…`, конкретный origin заранее неизвестен), но **`allow_credentials=False`**: куки/credentials API не использует, а связка `*` + credentials позволяла бы чужому сайту дёргать API в контексте пользователя. Сужать origin списком нельзя — id расширения и origin страницы не фиксированы. См. BE-6 в бэклоге: привязка PATCH/DELETE к создателю (owner-токен) — отдельная задача.
 
 ### 2.4. Монтирование роутеров (`app/main.py:61-62`)
 
@@ -157,7 +157,7 @@ app.include_router(ws_router, prefix="/ws")     # WebSocket
 | Метод | Путь | Хендлер:line | Поведение / коды |
 |---|---|---|---|
 | `POST` | `/api/rooms` | `create_room` `:11` | `201`, тело `RoomCreate` → `RoomInternal` → `RoomService.create_room`; ответ `RoomResponse` |
-| `GET` | `/api/rooms` | `list_rooms` `:21` | список всех комнат как `list[RoomResponse]` |
+| `GET` | `/api/rooms` | `list_rooms` `:21` | список всех комнат `list[RoomResponse]` — **только в debug**; в проде `404` (анти-энумерация) |
 | `GET` | `/api/rooms/{room_id}` | `get_room` `:28` | `404` если нет; иначе `RoomResponse` |
 | `PATCH` | `/api/rooms/{room_id}` | `update_room` `:39` | частичное обновление через `RoomUpdate`; `404` если нет |
 | `DELETE` | `/api/rooms/{room_id}` | `delete_room` `:51` | `404` если нет; `409` если в комнате есть пользователи; иначе `{"message": ...}` |

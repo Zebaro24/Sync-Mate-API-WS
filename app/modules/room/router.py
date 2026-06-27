@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 
+from app.config import settings
 from app.modules.room.dependencies import get_room_service
 from app.modules.room.schemas import RoomCreate, RoomInternal, RoomResponse, RoomUpdate
 from app.modules.room.service import RoomService
@@ -22,6 +23,10 @@ async def create_room(
 async def list_rooms(
     room_service: RoomService = Depends(get_room_service),
 ) -> list[RoomResponse]:
+    # Полный список комнат (id, video_url, ники участников) — это энумерация/утечка.
+    # Никем, кроме отладки, не используется, поэтому наружу не отдаём (только в debug-режиме).
+    if not settings.debug:
+        raise HTTPException(status_code=404, detail="Not found")
     return [RoomResponse.from_room(room) for room in room_service.rooms.values()]
 
 

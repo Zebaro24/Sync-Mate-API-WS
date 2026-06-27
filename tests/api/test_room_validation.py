@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from app.config import settings
 from app.modules.room.dependencies import _room_service
 from app.modules.room.models import Room
 from tests.client import client
@@ -39,3 +40,16 @@ def test_redirect_rejects_non_rezka_video():
     _room_service._storage["bad"] = room
     response = client.get("/api/rooms/bad/redirect", follow_redirects=False)
     assert response.status_code == 400
+
+
+def test_list_rooms_hidden_without_debug(mocker):
+    # Публичный список комнат закрыт в проде (debug=False) — нет энумерации.
+    mocker.patch.object(settings, "debug", False)
+    assert client.get("/api/rooms").status_code == 404
+
+
+def test_list_rooms_visible_in_debug(mocker):
+    mocker.patch.object(settings, "debug", True)
+    response = client.get("/api/rooms")
+    assert response.status_code == 200
+    assert response.json() == []

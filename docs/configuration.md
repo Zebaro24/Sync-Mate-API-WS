@@ -234,7 +234,7 @@ poetry shell
 uvicorn app.main:app --reload
 ```
 
-Приложение FastAPI собирается в `app/main.py` (`app = FastAPI(...)`, `main.py:46`), подключая роутеры `/api` (`main.py:61`) и `/ws` (`main.py:62`). CORS открыт для всех origin'ов (`main.py:53-59`).
+Приложение FastAPI собирается в `app/main.py` (`app = FastAPI(...)`), подключая роутеры `/api` и `/ws`. CORS открыт по origin, но без credentials (`allow_credentials=False`) — см. `docs/rest-api.md` и `docs/architecture.md §2.3`.
 
 ### Тесты, линт, типы
 

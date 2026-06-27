@@ -34,11 +34,17 @@ router.include_router(rezka_router, prefix="/rezka")     # app/api/router.py:10
 
 ### Аутентификация
 
-Аутентификации нет. Эндпоинты открыты. CORS настроен максимально широко (`app/main.py:53-59`):
+Аутентификации нет (PATCH/DELETE пока не привязаны к создателю — см. бэклог BE-6). CORS открыт по
+origin, но **без credentials** (`app/main.py`):
 
 ```python
-allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
+allow_origins=["*"], allow_credentials=False,
+allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allow_headers=["*"]
 ```
+
+Origin не сужаем (расширение зовёт API с разных origin: страница Rezka, `chrome-extension://…`),
+но `allow_credentials=False` убирает опасную связку `*` + куки — чужой сайт не сможет действовать
+в контексте пользователя. Куки/credentials API и так не использует.
 
 ### Форматы
 
@@ -222,7 +228,12 @@ curl -X POST http://127.0.0.1:8000/api/rooms \
 
 Возвращает массив всех комнат, находящихся в памяти (`room_service.rooms.values()`). Параметров нет. Пагинации/фильтрации нет.
 
-**Ответ `200 OK`** — `list[RoomResponse]` (может быть пустым `[]`).
+> ⚠️ **Только для отладки.** Полный список комнат — это утечка/энумерация (id, video_url, ники),
+> поэтому отдаётся **лишь при `settings.debug=True`**. В проде (`debug=False`) эндпоинт возвращает
+> `404 Not Found`. Расширением не используется.
+
+**Ответ `200 OK`** (только в debug) — `list[RoomResponse]` (может быть пустым `[]`).
+**Ответ `404 Not Found`** — в проде (`debug=False`).
 
 **Пример запроса**
 

@@ -50,11 +50,15 @@ app = FastAPI(
     debug=settings.debug,
 )
 
+# API публичный и без авторизации: расширение зовёт его с разных origin (страница Rezka,
+# chrome-extension://…) и НЕ шлёт куки/credentials. Поэтому origin оставляем "*", но
+# allow_credentials=False — иначе связка "*" + credentials позволяет любому сайту дёргать API
+# в контексте пользователя. Сужать origin списком нельзя (id расширения/origin не фиксированы).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
