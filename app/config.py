@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # Допуск (сек) при сравнении позиций воспроизведения — float не сравниваем на равенство.
     SYNC_TOLERANCE: float = 1.0
 
+    # Сколько ждём готовности всех участников, прежде чем стартовать по уже готовым (сек).
+    READY_TIMEOUT: float = 30.0
+
     REZKA_URL: str = "https://rezka.ag"
 
     PROXIES_LIST: list | str | None = None
