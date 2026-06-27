@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         "from YouTube and Rezka.ag."
     )
     author: str = "Zebaro (zebaro.dev)"
-    version: str = "0.2.3"
+    version: str = "0.2.4"
 
     debug: bool = False
 
