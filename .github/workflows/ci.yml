@@ -111,9 +111,13 @@ jobs:
       - name: Run Bandit
         run: poetry run bandit -r app
 
-      - name: Run Safety
-        run:
-          poetry run safety check
+      - name: Run pip-audit (dependency CVE scan)
+        # Бесплатный аудит зависимостей (OSV / PyPI Advisory DB) — замена депрекейтнутого safety.
+        # Сканируем только рантайм-зависимости (main-группа из poetry export); pip и dev-инструменты
+        # не часть поверхности атаки прод-образа, поэтому в скоуп не входят.
+        run: |
+          poetry export --without-hashes -f requirements.txt -o requirements-audit.txt
+          poetry run pip-audit -r requirements-audit.txt --no-deps
 
   test:
     name: Tests & Coverage
