@@ -1,0 +1,35 @@
+name: Protocol
+
+# Cross-repo WS-протокол: набор типов сообщений должен совпадать BE <-> FE.
+# Локально это проверяет gate (scripts/protocol_sync.py); здесь — в CI, с checkout обоих репо.
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  protocol-parity:
+    name: WS protocol parity (BE <-> FE)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+
+      - name: Checkout extension
+        uses: actions/checkout@v4
+        with:
+          repository: Zebaro24/Sync-Mate-Extension
+          ref: main
+          path: _ext
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Check WS protocol parity
+        env:
+          API_DIR: .
+          EXT_DIR: _ext
+        run: python scripts/protocol_check.py

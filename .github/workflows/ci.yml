@@ -45,6 +45,10 @@ jobs:
       - name: Run linting
         run: poetry run flake8 app tests
 
+      - name: Architecture lint
+        # Вендорная копия workspace scripts/arch_lint_api.py (stdlib, без poetry).
+        run: python scripts/arch_lint.py
+
   type-check:
     name: Type Checking
     runs-on: ubuntu-latest
