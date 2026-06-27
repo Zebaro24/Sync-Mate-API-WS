@@ -142,6 +142,8 @@ omit = [
 ]
 
 [tool.coverage.report]
+# Порог покрытия enforced и локально, и в CI (любой прогон с --cov упадёт при просадке).
+fail_under = 85
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
