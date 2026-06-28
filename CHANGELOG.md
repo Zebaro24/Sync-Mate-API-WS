@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.6 — 2026-06-28
+
+- _describe what shipped_
+
 ## v0.2.5 — 2026-06-28
 
 - _describe what shipped_
