@@ -764,7 +764,7 @@ curl "http://127.0.0.1:8000/api/rezka/series_source?series_id=67890&translator_i
 | `DESCRIPTION` | Описание сервиса. | см. `config.py:6-11` |
 | `AUTHOR` | Автор. | `"Zebaro (zebaro.dev)"` |
 | `VERSION` | Версия. | `"0.1.1"` |
-| `DEBUG` | Режим отладки (уровень логов, `FastAPI(debug=...)`). | `False` |
+| `DEBUG` | Режим отладки (`FastAPI(debug=...)`, `/api/rooms`). | `False` |
 | `REQUIRED_DOWNLOAD_TIME` | Сколько секунд буфера нужно каждому участнику для готовности комнаты. | `15` |
 | `REZKA_URL` | Базовый URL Rezka. | `"https://rezka.ag"` |
 | `PROXIES_LIST` | CSV-список прокси для запросов к Rezka (парсится в список в `config.py:25-28`). | `None` |

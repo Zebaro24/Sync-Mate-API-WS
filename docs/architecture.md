@@ -60,11 +60,11 @@
 | `formatters.default.format` | `%(asctime)s \| %(levelname)-8s \| %(name)s - %(message)s` | единый формат для всех хендлеров |
 | `formatters.default.datefmt` | `%Y-%m-%d %H:%M:%S` | |
 | `handlers.console` | `logging.StreamHandler` с форматтером `default` | вывод в stderr/stdout |
-| `loggers.app` | level `DEBUG` если `settings.debug`, иначе `INFO`; `propagate=False` | все модули логируют через `logging.getLogger(__name__)`, имена начинаются с `app.` |
+| `loggers.app` | **временно** level `DEBUG` (форсировано, `main.py:28`); штатно `DEBUG` если `settings.debug`, иначе `INFO`; `propagate=False` | все модули логируют через `logging.getLogger(__name__)`, имена начинаются с `app.` |
 | `loggers.uvicorn.access` / `uvicorn.error` | level `INFO`, `propagate=False` | перехватывают логи uvicorn в общий формат |
 | `disable_existing_loggers` | `False` | сторонние логгеры (httpx и т.п.) не глушатся |
 
-`propagate=False` у `app` критичен: без него сообщения дублировались бы корневым логгером uvicorn. Уровень логгера `app` — единственное, на что влияет `settings.debug` в логировании.
+`propagate=False` у `app` критичен: без него сообщения дублировались бы корневым логгером uvicorn. Уровень логгера `app` сейчас **временно форсирован в `DEBUG`** (`main.py:28`) и развязан с `settings.debug`; штатно им управляет `settings.debug`.
 
 ### 2.2. Создание приложения (`app/main.py:46-51`)
 
@@ -121,7 +121,7 @@ app.include_router(ws_router, prefix="/ws")     # WebSocket
 | `description` | `str` | длинная строка | `description` приложения |
 | `author` | `str` | `"Zebaro (zebaro.dev)"` | поле `/api/info` |
 | `version` | `str` | `"0.1.1"` | `version` приложения и `/api/info` |
-| `debug` | `bool` | `False` | уровень логов + режим FastAPI |
+| `debug` | `bool` | `False` | режим FastAPI (traceback) + анти-энумерация `/api/rooms` |
 | `REQUIRED_DOWNLOAD_TIME` | `int` | `15` | сколько секунд буфера обязан иметь каждый клиент, чтобы комната «загрузилась» (см. §8.3) |
 | `REZKA_URL` | `str` | `"https://rezka.ag"` | базовый URL для `RezkaBase` |
 | `PROXIES_LIST` | `list \| str \| None` | `None` | список прокси для запросов к Rezka |

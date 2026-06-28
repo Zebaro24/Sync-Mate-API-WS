@@ -66,7 +66,7 @@ settings = Settings()
 | `description` (`:6`) | `str` | длинная строка (см. выше) | Описание API в OpenAPI | `main.py:48`, `api/router.py:17` |
 | `author` (`:12`) | `str` | `"Zebaro (zebaro.dev)"` | Автор (метаданные) | `api/router.py:18` |
 | `version` (`:13`) | `str` | `"0.1.1"` | Версия API в OpenAPI/корневом ответе | `main.py:49`, `api/router.py:19` |
-| `debug` (`:15`) | `bool` | `False` | Режим отладки FastAPI + уровень логов | `main.py:28`, `main.py:50` |
+| `debug` (`:15`) | `bool` | `False` | Режим отладки FastAPI (traceback) + анти-энумерация `GET /api/rooms` | `main.py:50`, `modules/room/router.py:28` |
 | `REQUIRED_DOWNLOAD_TIME` (`:17`) | `int` | `15` | Порог буферизации (сек) для старта синхронного воспроизведения | `modules/room/models.py:78` |
 | `REZKA_URL` (`:19`) | `str` | `"https://rezka.ag"` | Базовый URL Rezka для всех HTTP-запросов | `modules/rezka/_base.py:17` |
 | `PROXIES_LIST` (`:21`) | `list \| str \| None` | `None` | Список HTTP-прокси для запросов к Rezka | `modules/rezka/_base.py:18` |
@@ -77,9 +77,10 @@ settings = Settings()
 
 - Тип `bool`, дефолт `False` (`config.py:15`).
 - Управляется переменной окружения `DEBUG` (имя поля в нижнем регистре, но матчинг регистронезависимый).
-- Эффекты в `app/main.py`:
-  - Уровень логгера `app`: `"DEBUG" if settings.debug else "INFO"` (`main.py:28`).
+- Эффекты:
   - Прокидывается в `FastAPI(debug=settings.debug)` (`main.py:50`) — включает подробные traceback'и.
+  - Открывает `GET /api/rooms` (`modules/room/router.py:28`) — публичный список всех комнат; при `False` это `404` (анти-энумерация).
+- ⚠️ Уровень логов **развязан** с `debug`: логгер `app` сейчас **временно форсирован в `"DEBUG"`** (`main.py:28`) для ловли багов (штатно — `"DEBUG" if settings.debug else "INFO"`). Поэтому подробные логи идут, но при `debug=False` traceback и `/api/rooms` остаются закрыты.
 - Pydantic парсит булевы значения из строк (`true/false`, `1/0`, `yes/no`, `on/off`).
 
 ### 2.3. `REQUIRED_DOWNLOAD_TIME`

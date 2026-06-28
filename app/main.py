@@ -25,7 +25,9 @@ LOGGING_CONFIG = {
     "loggers": {
         "app": {
             "handlers": ["console"],
-            "level": "DEBUG" if settings.debug else "INFO",
+            # Временно форсировано в DEBUG для ловли багов (штатно: "DEBUG" if settings.debug else "INFO").
+            # Уровень логов развязан с settings.debug — подробные логи НЕ открывают /api/rooms и FastAPI-traceback.
+            "level": "DEBUG",
             "propagate": False,
         },
         "uvicorn.access": {

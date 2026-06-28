@@ -315,7 +315,7 @@ git tag vX.Y.Z + git push origin vX.Y.Z
 
 | Имя | Назначение |
 |---|---|
-| `DEBUG` | флаг отладки (по умолчанию `false`) |
+| `DEBUG` | режим FastAPI (traceback) + `/api/rooms` (по умолчанию `false`) |
 | `REQUIRED_DOWNLOAD_TIME` | порог буферизации, сек (по умолчанию 15) |
 | `REZKA_URL` | базовый URL Rezka (по умолчанию `https://rezka.ag`) |
 | `PROXIES_LIST` | CSV-строка прокси; `Settings.__init__` сам разбивает её по запятой в список |
