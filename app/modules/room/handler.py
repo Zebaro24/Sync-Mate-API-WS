@@ -3,6 +3,7 @@ import logging
 import math
 from typing import Any
 
+from app.config import settings
 from app.modules.room.models import Room, User
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,17 @@ class UserHandler:
         # Длительность приходит со status; не затираем известное значение, если поля нет.
         if "duration" in data:
             self.user.duration = _coerce_time(data.get("duration"))
+
+        # Плеер Rezka во время рекламы/сброса роняет current_time в 0 при живом
+        # видео — не даём фантомному нулю перемотать комнату в начало, если кто-то
+        # из остальных реально стоит на ненулевой позиции.
+        if (
+            self.user.current_time == 0
+            and self.user.duration > 0
+            and any(u.current_time > settings.SYNC_TOLERANCE for u in self.room.get_users_exc(self.user))
+        ):
+            logger.debug("phantom current_time=0 from '%s' ignored (action=%s)", self.user.name, action)
+            return
 
         if action == "status":
             await self._handle_status(data)

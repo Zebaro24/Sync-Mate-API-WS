@@ -215,42 +215,41 @@ def _make_user(current_time=0, downloaded_time=10):
 
 
 @pytest.mark.asyncio
-async def test_remove_user_starts_when_remaining_ready(mock_settings):
-    """SYNC-4: уход тормозящего делает оставшихся готовыми — им уходит play."""
+async def test_remove_user_pauses_remaining(mock_settings):
+    """SYNC-4: уход участника ставит оставшихся на паузу (смотрим вместе)."""
     room = Room("1", "Room1", "video.mp4", 0, created_at="now")
-    ready = _make_user(current_time=0, downloaded_time=10)
-    laggard = _make_user(current_time=50, downloaded_time=0)
+    a = _make_user(current_time=0, downloaded_time=10)
+    b = _make_user(current_time=50, downloaded_time=0)
 
-    await room.add_user(ready)
-    await room.add_user(laggard)
+    await room.add_user(a)
+    await room.add_user(b)
+
+    await room.remove_user(b)
+
+    assert room.is_paused is True
     assert room.is_loaded is False
-
-    await room.remove_user(laggard)
-
-    assert room.is_loaded is True
-    ready.websocket.send_json.assert_awaited_once_with({"type": "play"})
+    a.websocket.send_json.assert_awaited_once_with({"type": "pause"})
 
 
 @pytest.mark.asyncio
-async def test_remove_user_sends_remove_block_pause_when_paused(mock_settings):
-    """SYNC-4: если комната на паузе — оставшимся уходит remove_block_pause."""
+async def test_remove_user_no_broadcast_when_already_paused(mock_settings):
+    """SYNC-4: если комната уже на паузе — уход участника ничего не рассылает."""
     room = Room("1", "Room1", "video.mp4", 0, created_at="now")
     room.is_paused = True
-    ready = _make_user(current_time=0, downloaded_time=10)
-    laggard = _make_user(current_time=50, downloaded_time=0)
+    a = _make_user(current_time=0, downloaded_time=10)
+    b = _make_user(current_time=50, downloaded_time=0)
 
-    await room.add_user(ready)
-    await room.add_user(laggard)
+    await room.add_user(a)
+    await room.add_user(b)
 
-    await room.remove_user(laggard)
+    await room.remove_user(b)
 
-    assert room.is_loaded is True
-    ready.websocket.send_json.assert_awaited_once_with({"type": "remove_block_pause"})
+    a.websocket.send_json.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_remove_user_no_start_when_remaining_not_ready(mock_settings):
-    """SYNC-4: если оставшийся всё ещё не готов — запуска нет."""
+async def test_remove_user_pauses_even_if_remaining_not_ready(mock_settings):
+    """SYNC-4: уход участника ставит оставшегося на паузу даже если тот не готов."""
     room = Room("1", "Room1", "video.mp4", 0, created_at="now")
     not_ready = _make_user(current_time=0, downloaded_time=0)
     laggard = _make_user(current_time=50, downloaded_time=0)
@@ -261,7 +260,8 @@ async def test_remove_user_no_start_when_remaining_not_ready(mock_settings):
     await room.remove_user(laggard)
 
     assert room.is_loaded is False
-    not_ready.websocket.send_json.assert_not_awaited()
+    assert room.is_paused is True
+    not_ready.websocket.send_json.assert_awaited_once_with({"type": "pause"})
 
 
 @pytest.mark.asyncio
@@ -278,8 +278,8 @@ async def test_remove_last_user_does_not_start(mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_remove_user_does_not_replay_when_already_loaded(mock_settings):
-    """SYNC-4: уже запущенная комната не шлёт повторный play при выходе участника."""
+async def test_remove_user_pauses_playing_room(mock_settings):
+    """SYNC-4: из играющей комнаты уход участника ставит оставшегося на паузу."""
     room = Room("1", "Room1", "video.mp4", 0, created_at="now")
     room.is_loaded = True
     ready = _make_user(current_time=0, downloaded_time=10)
@@ -289,7 +289,9 @@ async def test_remove_user_does_not_replay_when_already_loaded(mock_settings):
 
     await room.remove_user(other)
 
-    ready.websocket.send_json.assert_not_awaited()
+    assert room.is_paused is True
+    assert room.is_loaded is False
+    ready.websocket.send_json.assert_awaited_once_with({"type": "pause"})
 
 
 @pytest.mark.asyncio

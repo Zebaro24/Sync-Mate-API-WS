@@ -62,21 +62,23 @@ class Room:
         async with self._lock:
             if user in self.user_storage:
                 self.user_storage.remove(user)
-            # Уход «тормозящего» может сделать оставшихся готовыми — пересчитываем
-            # под локом. Иначе готовые залипнут: свой status они уже отправили
-            # и повторно его не пришлют, так что некому будет дёрнуть запуск.
-            if not self.is_loaded and self._all_ready_locked():
-                self.is_loaded = True
+            # Участник ушёл (или оборвалось соединение) — ставим оставшихся на паузу
+            # и сбрасываем готовность: смотрим вместе, поэтому в одиночку не играем.
+            # Если это временный обрыв, при reconnect сработает add_user → пересинхрон
+            # → авто-возобновление (remove_block_pause), когда снова готовы.
+            if self.user_storage and not self.is_paused:
+                self.is_paused = True
+                self.is_loaded = False
+                self._wait_started_at = time.monotonic()
                 recipients = list(self.user_storage)
-                message = {"type": "remove_block_pause"} if self.is_paused else {"type": "play"}
+                message = {"type": "pause"}
             user_count = len(self.user_storage)
         logger.debug("Room '%s' remove_user '%s' → users=%d", self.name, user.name, user_count)
         # Сетевой I/O — после выхода из лока.
         if recipients:
             logger.debug(
-                "Room '%s' became loaded after remove_user → broadcast %s to %d user(s)",
+                "Room '%s' paused after remove_user → broadcast pause to %d user(s)",
                 self.name,
-                message.get("type"),
                 len(recipients),
             )
             await asyncio.gather(
